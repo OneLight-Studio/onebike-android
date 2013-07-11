@@ -1,2 +1,4 @@
 src/VelibNRoses/local.properties
-src/VelibNRoses/VelibNRoses/build
+src/VelibNRoses/.idea/
+src/VelibNRoses/.gradle/
+src/VelibNRoses/VelibNRoses/build/
