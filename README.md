@@ -1,9 +1,6 @@
 # Velib N' Roses
 An Android application that makes Velib'Toulouse even more fabulous
 
-# MIT License
-This application is released under the MIT License. See the LICENSE file for more details.
-
 # Importing the project into Android Studio
 
 * Install SDK targets 8 and 17, Google Play Services and Android Support Library.
@@ -53,7 +50,7 @@ This application is released under the MIT License. See the LICENSE file for mor
 		}
 </pre>
 
-* Create a file `local.properties`:
+* Create a file `local.properties` in the folder `src/VelibNRoses`:
 
 <pre>
 		sdk.dir=&lt;android_sdk>
@@ -68,3 +65,5 @@ This application is released under the MIT License. See the LICENSE file for mor
 
 That's it!
 
+# MIT License
+This application is released under the MIT License. See the LICENSE file for more details.
