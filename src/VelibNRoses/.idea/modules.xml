@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/VelibNRoses.iml" filepath="$PROJECT_DIR$/VelibNRoses.iml" />
       <module fileurl="file://$PROJECT_DIR$/VelibNRoses/VelibNRoses-VelibNRoses.iml" filepath="$PROJECT_DIR$/VelibNRoses/VelibNRoses-VelibNRoses.iml" />
+      <module fileurl="file://$PROJECT_DIR$/google-play-services_lib/google-play-services_lib.iml" filepath="$PROJECT_DIR$/google-play-services_lib/google-play-services_lib.iml" />
     </modules>
   </component>
 </project>

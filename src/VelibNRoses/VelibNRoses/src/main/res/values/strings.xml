@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">Velib N\' Roses</string>
+    <string name="app_name">VelibNRoses</string>
     <string name="action_settings">Settings</string>
-    <string name="hello_world">Welcome To The Jungle !</string>
-    <string name="error">Oops, we got a little problem here...</string>
+    <string name="hello_world">Welcome To The Jungle!</string>
+    <string name="error"> Oops, we got a problem here</string>
 
 </resources>
