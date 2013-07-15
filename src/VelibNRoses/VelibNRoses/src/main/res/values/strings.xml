@@ -4,6 +4,7 @@
     <string name="app_name">VelibNRoses</string>
     <string name="action_settings">Settings</string>
     <string name="hello_world">Welcome To The Jungle!</string>
-    <string name="error"> Oops, we got a problem here</string>
+    <string name="error">Oops, we got a problem here</string>
+    <string name="error_init">Uh oh, failed to init the application</string>
 
 </resources>
