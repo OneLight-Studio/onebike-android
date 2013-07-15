@@ -35,21 +35,25 @@ public class WSRequest extends AsyncTask<Void, Void, JSONObject> {
     private Context context;
     private String resource;
     private List<NameValuePair> params;
-    private WSDefaultHandler handler;
+    private WSHandler handler;
     private Exception exception;
 
     public WSRequest(Context context, String resource) {
         this.context = context;
         this.resource = resource;
         params = new ArrayList<NameValuePair>();
-        handler = new WSDefaultHandler();
+        handler = new WSDefaultHandler() {
+            @Override
+            public void onResult(Context context, JSONObject result) {
+            }
+        };
     }
 
     public void call() {
         execute();
     }
 
-    public WSRequest handleWith(WSDefaultHandler handler) {
+    public WSRequest handleWith(WSHandler handler) {
         if (handler != null) {
             this.handler = handler;
         }
