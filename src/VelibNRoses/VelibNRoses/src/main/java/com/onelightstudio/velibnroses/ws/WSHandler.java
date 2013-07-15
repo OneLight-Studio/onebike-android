@@ -1,41 +1,20 @@
 package com.onelightstudio.velibnroses.ws;
 
+import android.content.Context;
+
 import org.json.JSONObject;
 
-import android.app.Activity;
-import android.content.Context;
-import android.widget.Toast;
+public interface WSHandler {
 
-import com.onelightstudio.velibnroses.R;
+    public void doAfter(Context context);
 
-public class WSHandler {
+    public void doBefore(Context context);
 
-    public void doAfter(Context context) {
-        if (context instanceof Activity) {
-            ((Activity) context).setProgressBarIndeterminateVisibility(false);
-        }
-    }
+    public void onCancelled(Context context);
 
-    public void doBefore(Context context) {
-        if (context instanceof Activity) {
-            ((Activity) context).setProgressBarIndeterminateVisibility(true);
-        }
-    }
+    public void onError(Context context, int errorCode);
 
-    public void onCancelled(Context context) {
-        if (context instanceof Activity) {
-            ((Activity) context).setProgressBarIndeterminateVisibility(true);
-        }
-    }
+    public void onException(Context context, Exception e);
 
-    public void onError(Context context, int errorCode) {
-        Toast.makeText(context, R.string.error, Toast.LENGTH_LONG).show();
-    }
-
-    public void onException(Context context, Exception e) {
-        Toast.makeText(context, R.string.error, Toast.LENGTH_LONG).show();
-    }
-
-    public void onResult(Context context, JSONObject result) {
-    }
+    public void onResult(Context context, JSONObject result);
 }
