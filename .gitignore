@@ -6,3 +6,4 @@ src/VelibNRoses/VelibNRoses/build/
 src/VelibNRoses/google-play-services_lib/
 src/VelibNRoses/VelibNRoses.iml
 src/VelibNRoses/VelibNRoses/VelibNRoses-VelibNRoses.iml
+src/VelibNRoses/VelibNRoses/src/main/res/raw/api_keys.properties

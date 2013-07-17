@@ -1,1 +1,1 @@
-include ':VelibNRoses', ':google-play-services_lib'
+include ':VelibNRoses'
