@@ -56,6 +56,12 @@ An Android application that makes Velib'Toulouse even more fabulous
 		sdk.dir=&lt;android_sdk>
 </pre>
 
+* Create a file `app.properties` in the folder `src/VelibNRoses/VelibNRoses/src/main/res/raw` (create the folder if doesn't exist) :
+
+<pre>
+	JCDecaux_API=###
+</pre>
+
 * Import the project into Android Studio:
 	* Open Android Studio
 	* Import Project

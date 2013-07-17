@@ -1,11 +1,9 @@
 package com.onelightstudio.velibnroses;
 
 import android.app.Application;
-import android.util.Log;
 import android.widget.Toast;
 
 import java.io.IOException;
-import java.util.InvalidPropertiesFormatException;
 import java.util.Properties;
 
 public class App extends Application {
@@ -17,7 +15,7 @@ public class App extends Application {
         // load the properties
         props = new Properties();
         try {
-            props.load(getResources().openRawResource(R.raw.props));
+            props.load(getResources().openRawResource(R.raw.app));
         } catch (IOException e) {
             Toast.makeText(this, R.string.error_init, Toast.LENGTH_LONG).show();
         }
@@ -25,5 +23,17 @@ public class App extends Application {
 
     public Properties getProperties() {
         return props;
+    }
+
+    public String getProp(String key) {
+        return props.getProperty(key);
+    }
+
+    public Double getPropDouble(String key) {
+        return Double.valueOf(props.getProperty(key));
+    }
+
+    public Integer getPropInt(String key) {
+        return Integer.valueOf(props.getProperty(key));
     }
 }
