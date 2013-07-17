@@ -1,22 +1,17 @@
 package com.onelightstudio.velibnroses;
 
-import android.location.Criteria;
 import android.location.Location;
-import android.location.LocationManager;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
+import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesClient;
 import com.google.android.gms.location.LocationClient;
-import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
-
-import java.util.Properties;
 
 public class MainActivity extends FragmentActivity implements GooglePlayServicesClient.ConnectionCallbacks, GooglePlayServicesClient.OnConnectionFailedListener {
 
@@ -34,26 +29,38 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     @Override
     protected void onStart() {
         super.onStart();
-        // Connect the client.
+
         mLocationClient.connect();
     }
 
-    @Override
-    public void onAttachedToWindow() {
-        super.onAttachedToWindow();
+    protected void onResume() {
+        super.onResume();
 
-        mMap = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getMap();
-        mMap.setMyLocationEnabled(true);
+        setUpMapIfNeeded();
+    }
 
-        //Set map centered to the default location
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Double.valueOf(Constants.MAP_DEFAULT_LAT), Constants.MAP_DEFAULT_LNG), Constants.MAP_DEFAULT_ZOOM));
+    private void setUpMapIfNeeded() {
+        // Do a null check to confirm that we have not already instantiated the map.
+        if (mMap == null) {
+            mMap = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getMap();
+            // Check if we were successful in obtaining the map.
+            if (mMap != null) {
+                mMap.setMyLocationEnabled(true);
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Double.valueOf(Constants.MAP_DEFAULT_LAT), Constants.MAP_DEFAULT_LNG), Constants.MAP_DEFAULT_ZOOM));
+            } else {
+                //Tell the user to check its google play services
+                Toast.makeText(this, R.string.error_google_play_service, Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     @Override
     public void onConnected(Bundle bundle) {
-        //Set the map centered to the user location
-        Location myLocation = mLocationClient.getLastLocation();
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(myLocation.getLatitude(), myLocation.getLongitude()), Constants.MAP_DEFAULT_USER_ZOOM), Constants.MAP_ANIMATE_TIME, null);
+        if (mMap != null) {
+            //Set the map centered to the user location
+            Location myLocation = mLocationClient.getLastLocation();
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(myLocation.getLatitude(), myLocation.getLongitude()), Constants.MAP_DEFAULT_USER_ZOOM), Constants.MAP_ANIMATE_TIME, null);
+        }
     }
 
     @Override
