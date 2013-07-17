@@ -15,25 +15,13 @@ public class App extends Application {
         // load the properties
         props = new Properties();
         try {
-            props.load(getResources().openRawResource(R.raw.app));
+            props.load(getResources().openRawResource(R.raw.api_keys));
         } catch (IOException e) {
             Toast.makeText(this, R.string.error_init, Toast.LENGTH_LONG).show();
         }
     }
 
-    public Properties getProperties() {
-        return props;
-    }
-
-    public String getProp(String key) {
+    public String getApiKey(String key) {
         return props.getProperty(key);
-    }
-
-    public Double getPropDouble(String key) {
-        return Double.valueOf(props.getProperty(key));
-    }
-
-    public Integer getPropInt(String key) {
-        return Integer.valueOf(props.getProperty(key));
     }
 }

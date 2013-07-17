@@ -42,22 +42,18 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     public void onAttachedToWindow() {
         super.onAttachedToWindow();
 
-        App app = (App) getApplication();
-
         mMap = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getMap();
         mMap.setMyLocationEnabled(true);
 
         //Set map centered to the default location
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Double.valueOf(app.getPropDouble("MAP_DEFAULT_LAT")), app.getPropDouble("MAP_DEFAULT_LNG")), app.getPropInt("MAP_DEFAULT_ZOOM")));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Double.valueOf(Constants.MAP_DEFAULT_LAT), Constants.MAP_DEFAULT_LNG), Constants.MAP_DEFAULT_ZOOM));
     }
 
     @Override
     public void onConnected(Bundle bundle) {
-        App app = (App) getApplication();
-
         //Set the map centered to the user location
         Location myLocation = mLocationClient.getLastLocation();
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(myLocation.getLatitude(), myLocation.getLongitude()), app.getPropInt("MAP_DEFAULT_USER_ZOOM")), app.getPropInt("MAP_ANIMATE_TIME"), null);
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(myLocation.getLatitude(), myLocation.getLongitude()), Constants.MAP_DEFAULT_USER_ZOOM), Constants.MAP_ANIMATE_TIME, null);
     }
 
     @Override
