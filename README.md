@@ -3,14 +3,21 @@ An Android application that makes Velib'Toulouse even more fabulous
 
 # Importing the project into Android Studio
 
-* Install SDK targets 8 and 17, Google Play Services and Android Support Library.
-
-* Create a file `local.properties` in the folder `src/VelibNRoses`:
-
-<pre>
-		sdk.dir=&lt;android_sdk>
-</pre>
-
+* Download and install Android Studio
+	* Create an environment variable "ANDROID_HOME" to PATH_TO_ANDROID_STUDIO_INSTALL/sdk
+	* Add to PATH, ANDROID_HOME/tools and DROID_HOME/platform-tools
+* Open Android Manager with <code>android</code> command and install (or check if already installed)
+	* Android 4.2.2 (API 17) -> SDK Platform
+	* Android 2.2 (API 8) -> SDK Platform
+	* Extras
+		* Google Play Services
+		* Google Repository
+		* Android Support Repository
+		* Android Support Library
+	* Tools
+		* Android SDK Tools
+		* Android SDK Platform-tools
+		* Android SDK Build-tools
 * Create a file `api_keys.properties` in the folder `src/VelibNRoses/VelibNRoses/src/main/res/raw` (create the folder if doesn't exist) :
 
 <pre>
