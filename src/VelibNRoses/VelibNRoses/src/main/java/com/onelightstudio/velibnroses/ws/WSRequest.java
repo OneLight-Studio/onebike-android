@@ -23,14 +23,16 @@ import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 import org.apache.http.protocol.HTTP;
 import org.apache.http.util.EntityUtils;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import android.content.Context;
 import android.os.AsyncTask;
+import android.util.Log;
 
 public class WSRequest extends AsyncTask<Void, Void, JSONObject> {
 
-    private static final int TIMEOUT = 30;
+    private static final int TIMEOUT = 2;
 
     private Context context;
     private String resource;
@@ -67,6 +69,10 @@ public class WSRequest extends AsyncTask<Void, Void, JSONObject> {
         return this;
     }
 
+    /**
+     * Do the request
+     * @return JSONObject, if the result is an array, the object has only one key named "list"
+     */
     @Override
     protected JSONObject doInBackground(Void... nothing) {
         JSONObject result = null;
@@ -103,7 +109,13 @@ public class WSRequest extends AsyncTask<Void, Void, JSONObject> {
                             }
                         });
                 if (resultStr != null && !"".equals(resultStr.trim())) {
-                    result = new JSONObject(resultStr);
+                    if (resultStr.startsWith("[")) {
+                        //The json is an Array
+                        result = new JSONObject();
+                        result.put("list", new JSONArray(resultStr));
+                    } else {
+                        result = new JSONObject(resultStr);
+                    }
                 }
             } catch (Exception e) {
                 exception = e;
@@ -143,6 +155,8 @@ public class WSRequest extends AsyncTask<Void, Void, JSONObject> {
     protected void onPostExecute(JSONObject result) {
         handler.doAfter(context);
         if (exception != null) {
+            Log.d("WS Request error", exception.toString());
+
             if (exception instanceof HttpResponseException) {
                 handler.onError(context,
                         ((HttpResponseException) exception).getStatusCode());
