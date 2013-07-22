@@ -1,8 +1,11 @@
 package com.onelightstudio.velibnroses;
 
+import android.content.Context;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
+import android.util.Log;
+import android.view.Window;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -11,55 +14,42 @@ import com.google.android.gms.location.LocationClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.onelightstudio.velibnroses.model.Station;
+import com.onelightstudio.velibnroses.ws.WSDefaultHandler;
+import com.onelightstudio.velibnroses.ws.WSRequest;
+import com.onelightstudio.velibnroses.ws.WSSilentHandler;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
 
 public class MainActivity extends FragmentActivity implements GooglePlayServicesClient.ConnectionCallbacks, GooglePlayServicesClient.OnConnectionFailedListener {
 
+    private final static String FORCE_CAMERA_POSITION = "ForceCameraPosition";
+
     private GoogleMap mMap;
+    private boolean mForceCameraPosition;
     private LocationClient mLocationClient;
+    private ArrayList<Station> stations;
+    private boolean mStationsRequestSended;
 
     @Override
-    protected void onCreate(Bundle pSavedInstanceState) {
-        super.onCreate(pSavedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        mLocationClient = new LocationClient(this, this, this);
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        mLocationClient.connect();
-    }
-
-    protected void onResume() {
-        super.onResume();
+    public void onAttachedToWindow() {
+        super.onAttachedToWindow();
 
         setUpMapIfNeeded();
     }
 
-    private void setUpMapIfNeeded() {
-        // Do a null check to confirm that we have not already instantiated the map.
-        if (mMap == null) {
-            mMap = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getMap();
-            // Check if we were successful in obtaining the map.
-            if (mMap != null) {
-                mMap.setMyLocationEnabled(true);
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Double.valueOf(Constants.MAP_DEFAULT_LAT), Constants.MAP_DEFAULT_LNG), Constants.MAP_DEFAULT_ZOOM));
-            } else {
-                //Tell the user to check its google play services
-                Toast.makeText(this, R.string.error_google_play_service, Toast.LENGTH_LONG).show();
-            }
-        }
-    }
-
     @Override
     public void onConnected(Bundle bundle) {
-        if (mMap != null) {
-            //Set the map centered to the user location
-            Location myLocation = mLocationClient.getLastLocation();
-            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(myLocation.getLatitude(), myLocation.getLongitude()), Constants.MAP_DEFAULT_USER_ZOOM), Constants.MAP_ANIMATE_TIME, null);
+        if (mForceCameraPosition == true) {
+            Location userLocation = mLocationClient.getLastLocation();
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(userLocation.getLatitude(), userLocation.getLongitude()), Constants.MAP_DEFAULT_USER_ZOOM), Constants.MAP_ANIMATE_TIME, null);
         }
     }
 
@@ -71,5 +61,115 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
         //TODO
+    }
+
+    @Override
+    protected void onCreate(Bundle pSavedInstanceState) {
+        super.onCreate(pSavedInstanceState);
+        requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
+        setContentView(R.layout.activity_main);
+
+        mStationsRequestSended = false;
+
+        if (pSavedInstanceState != null) {
+            mForceCameraPosition = pSavedInstanceState.getBoolean(FORCE_CAMERA_POSITION);
+        } else {
+            mForceCameraPosition = true;
+        }
+
+        mLocationClient = new LocationClient(this, this, this);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        mLocationClient.connect();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        outState.putBoolean(FORCE_CAMERA_POSITION, false);
+    }
+
+    private void setUpMapIfNeeded() {
+        // Do a null check to confirm that we have not already instantiated the map.
+        if (mMap == null) {
+            mMap = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getMap();
+            // Check if we were successful in obtaining the map.
+            if (mMap != null) {
+                mMap.setMyLocationEnabled(true);
+                mMap.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
+                    @Override
+                    public void onCameraChange(CameraPosition cameraPosition) {
+                        setMapStations();
+                    }
+                });
+
+                if (mForceCameraPosition) {
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Double.valueOf(Constants.MAP_DEFAULT_LAT), Constants.MAP_DEFAULT_LNG), Constants.MAP_DEFAULT_ZOOM));
+                }
+            } else {
+                //Tell the user to check its google play services
+                Toast.makeText(this, R.string.error_google_play_service, Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    private void setMapStations() {
+        if (stations == null) {
+            if (mStationsRequestSended == false) {
+                mStationsRequestSended = true;
+                WSRequest request = new WSRequest(this, Constants.JCD_URL);
+                request.withParam(Constants.JCD_API_KEY, ((App) getApplication()).getApiKey(Constants.JCD_APP_API_KEY));
+                request.handleWith(new WSDefaultHandler() {
+                    @Override
+                    public void onResult(Context context, JSONObject result) {
+                        JSONArray stationsJSON = (JSONArray) result.opt("list");
+
+                        stations = new ArrayList<Station>();
+                        for (int i = 0; i < stationsJSON.length(); i++) {
+                            stations.add(new Station(stationsJSON.optJSONObject(i)));
+                        }
+
+                        setMapStations();
+                    }
+                });
+
+                request.call();
+            }
+        } else {
+            LatLngBounds bounds = mMap.getProjection().getVisibleRegion().latLngBounds;
+            LatLng mapCenter = mMap.getCameraPosition().target;
+            LatLng userPos = new LatLng(mLocationClient.getLastLocation().getLatitude(), mLocationClient.getLastLocation().getLongitude());
+
+            for (Station station : stations) {
+                if (bounds.contains(station.latLng)
+                        && (getDistance(mapCenter, station.latLng) <= Constants.MAP_STATIONS_DIST_LIMIT
+                        || getDistance(userPos, station.latLng) <= Constants.MAP_STATIONS_DIST_LIMIT)
+                        ) {
+                    station.addMarker(mMap);
+                } else {
+                    station.removeMarker();
+                }
+            }
+        }
+    }
+
+    private static long getDistance(LatLng point1, LatLng point2) {
+        double lat1 = point1.latitude;
+        double lng1 = point1.longitude;
+        double lat2 = point2.latitude;
+        double lng2 = point2.longitude;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLng = Math.toRadians(lng2 - lng1);
+        double radLat1 = Math.toRadians(lat1);
+        double radLat2 = Math.toRadians(lat2);
+
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.sin(dLng / 2) * Math.sin(dLng / 2) * Math.cos(radLat1) * Math.cos(radLat2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return (long) (Constants.EARTH_RADIUS * c);
     }
 }
