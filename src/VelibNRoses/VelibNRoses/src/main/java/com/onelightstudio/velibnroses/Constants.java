@@ -7,9 +7,8 @@ public interface Constants {
     public static final Double MAP_DEFAULT_LNG = 1.443615;
     public static final Integer MAP_DEFAULT_ZOOM = 12;
     public static final Integer MAP_DEFAULT_USER_ZOOM = 15;
-    public static final Integer MAP_LIMIT_MIN_ZOOM = 14;
-    public static final Integer MAP_LIMIT_MAX_ZOOM = 20;
     public static final Integer MAP_ANIMATE_TIME = 500;
+    public static final Integer MAP_STATIONS_DIST_LIMIT = 5000;
 
     public static final String JCD_URL = "https://api.jcdecaux.com/vls/v1/stations";
     public static final String JCD_API_KEY = "apiKey";

@@ -104,7 +104,6 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 mMap.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
                     @Override
                     public void onCameraChange(CameraPosition cameraPosition) {
-                        restrictZoom(cameraPosition);
                         setMapStations();
                     }
                 });
@@ -116,16 +115,6 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 //Tell the user to check its google play services
                 Toast.makeText(this, R.string.error_google_play_service, Toast.LENGTH_LONG).show();
             }
-        }
-    }
-
-    private void restrictZoom(CameraPosition cameraPosition) {
-        if (cameraPosition.zoom > Constants.MAP_LIMIT_MAX_ZOOM) {
-            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(cameraPosition.target, Constants.MAP_LIMIT_MAX_ZOOM));
-        }
-
-        if (cameraPosition.zoom < Constants.MAP_LIMIT_MIN_ZOOM) {
-            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(cameraPosition.target, Constants.MAP_LIMIT_MIN_ZOOM));
         }
     }
 
@@ -141,7 +130,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                         JSONArray stationsJSON = (JSONArray) result.opt("list");
 
                         stations = new ArrayList<Station>();
-                        for(int i = 0; i < stationsJSON.length(); i++) {
+                        for (int i = 0; i < stationsJSON.length(); i++) {
                             stations.add(new Station(stationsJSON.optJSONObject(i)));
                         }
 
@@ -153,14 +142,34 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             }
         } else {
             LatLngBounds bounds = mMap.getProjection().getVisibleRegion().latLngBounds;
+            LatLng mapCenter = mMap.getCameraPosition().target;
+            LatLng userPos = new LatLng(mLocationClient.getLastLocation().getLatitude(), mLocationClient.getLastLocation().getLongitude());
 
-            for(Station station : stations) {
-                if(bounds.contains(station.latLng)) {
+            for (Station station : stations) {
+                if (bounds.contains(station.latLng)
+                        && (getDistance(mapCenter, station.latLng) <= Constants.MAP_STATIONS_DIST_LIMIT
+                        || getDistance(userPos, station.latLng) <= Constants.MAP_STATIONS_DIST_LIMIT)
+                        ) {
                     station.addMarker(mMap);
                 } else {
                     station.removeMarker();
                 }
             }
         }
+    }
+
+    private static long getDistance(LatLng point1, LatLng point2) {
+        double lat1 = point1.latitude;
+        double lng1 = point1.longitude;
+        double lat2 = point2.latitude;
+        double lng2 = point2.longitude;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLng = Math.toRadians(lng2 - lng1);
+        double radLat1 = Math.toRadians(lat1);
+        double radLat2 = Math.toRadians(lat2);
+
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.sin(dLng / 2) * Math.sin(dLng / 2) * Math.cos(radLat1) * Math.cos(radLat2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return (long) (Constants.EARTH_RADIUS * c);
     }
 }
