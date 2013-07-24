@@ -84,7 +84,6 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         super.onStart();
 
         mLocationClient.connect();
-        Log.d("TEST UN PEU LONG MAIS PAS TROP NON PLUS");
     }
 
     @Override
