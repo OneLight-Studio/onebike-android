@@ -3,8 +3,8 @@ package com.onelightstudio.velibnroses;
 import android.content.Context;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.app.FragmentActivity;
-import android.util.Log;
 import android.view.Window;
 import android.widget.Toast;
 
@@ -17,7 +17,6 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.MarkerOptions;
 import com.onelightstudio.velibnroses.model.Station;
 import com.onelightstudio.velibnroses.ws.WSDefaultHandler;
 import com.onelightstudio.velibnroses.ws.WSRequest;
@@ -37,6 +36,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private LocationClient mLocationClient;
     private ArrayList<Station> stations;
     private boolean mStationsRequestSended;
+    private Handler timer;
 
     @Override
     public void onAttachedToWindow() {
@@ -69,6 +69,22 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
         setContentView(R.layout.activity_main);
 
+        //Start timer
+        timer = new Handler();
+        timer.post(new Runnable() {
+
+            @Override
+            public void run() {
+                if (stations != null) {
+                    stations = null;
+                    mStationsRequestSended = false;
+                    setMapStations();
+                }
+
+                timer.postDelayed(this, Constants.MAP_TIMER_REFRESH);
+            }
+        });
+
         mStationsRequestSended = false;
 
         if (pSavedInstanceState != null) {
@@ -88,10 +104,10 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     }
 
     @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
+    protected void onSaveInstanceState(Bundle pOutState) {
+        super.onSaveInstanceState(pOutState);
 
-        outState.putBoolean(FORCE_CAMERA_POSITION, false);
+        pOutState.putBoolean(FORCE_CAMERA_POSITION, false);
     }
 
     private void setUpMapIfNeeded() {
@@ -104,7 +120,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 mMap.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
                     @Override
                     public void onCameraChange(CameraPosition cameraPosition) {
-                        setMapStations();
+                    setMapStations(false);
                     }
                 });
 
@@ -118,25 +134,43 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         }
     }
 
+    private void setMapStationsResult(JSONObject result) {
+        JSONArray stationsJSON = (JSONArray) result.opt("list");
+
+        stations = new ArrayList<Station>();
+        for (int i = 0; i < stationsJSON.length(); i++) {
+            stations.add(new Station(stationsJSON.optJSONObject(i)));
+        }
+
+        mMap.clear();
+        setMapStations();
+    }
+
     private void setMapStations() {
+        setMapStations(true);
+    }
+
+    private void setMapStations(boolean pDoInBackbround) {
         if (stations == null) {
             if (mStationsRequestSended == false) {
                 mStationsRequestSended = true;
                 WSRequest request = new WSRequest(this, Constants.JCD_URL);
                 request.withParam(Constants.JCD_API_KEY, ((App) getApplication()).getApiKey(Constants.JCD_APP_API_KEY));
-                request.handleWith(new WSDefaultHandler() {
-                    @Override
-                    public void onResult(Context context, JSONObject result) {
-                        JSONArray stationsJSON = (JSONArray) result.opt("list");
-
-                        stations = new ArrayList<Station>();
-                        for (int i = 0; i < stationsJSON.length(); i++) {
-                            stations.add(new Station(stationsJSON.optJSONObject(i)));
+                if (pDoInBackbround == true) {
+                    request.handleWith(new WSSilentHandler() {
+                        @Override
+                        public void onResult(Context context, JSONObject result) {
+                            setMapStationsResult(result);
                         }
-
-                        setMapStations();
-                    }
-                });
+                    });
+                } else {
+                    request.handleWith(new WSDefaultHandler() {
+                        @Override
+                        public void onResult(Context context, JSONObject result) {
+                            setMapStationsResult(result);
+                        }
+                    });
+                }
 
                 request.call();
             }
