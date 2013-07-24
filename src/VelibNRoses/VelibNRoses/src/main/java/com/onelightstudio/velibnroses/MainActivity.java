@@ -3,6 +3,7 @@ package com.onelightstudio.velibnroses;
 import android.content.Context;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.app.FragmentActivity;
 import android.view.Window;
 import android.widget.Toast;
@@ -16,7 +17,6 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.MarkerOptions;
 import com.onelightstudio.velibnroses.model.Station;
 import com.onelightstudio.velibnroses.ws.WSDefaultHandler;
 import com.onelightstudio.velibnroses.ws.WSRequest;
@@ -25,7 +25,9 @@ import com.onelightstudio.velibnroses.ws.WSSilentHandler;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.security.Timestamp;
 import java.util.ArrayList;
+import java.util.Date;
 
 public class MainActivity extends FragmentActivity implements GooglePlayServicesClient.ConnectionCallbacks, GooglePlayServicesClient.OnConnectionFailedListener {
 
@@ -36,6 +38,9 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private LocationClient mLocationClient;
     private ArrayList<Station> stations;
     private boolean mStationsRequestSended;
+    private Handler timer;
+    private Runnable timeRunnable;
+    private Long pausedTime;
 
     @Override
     public void onAttachedToWindow() {
@@ -68,6 +73,22 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
         setContentView(R.layout.activity_main);
 
+        //Start timer
+        timeRunnable = new Runnable() {
+
+            @Override
+            public void run() {
+                Log.d(this.getClass().getName(), "Refresh Map Tick");
+                if (pausedTime == null) {
+                    setMapStationsOnTick();
+
+                    timer.postDelayed(this, Constants.MAP_TIMER_REFRESH_IN_MILLISECONDES);
+                }
+            }
+        };
+        timer = new Handler();
+        timer.post(timeRunnable);
+
         mStationsRequestSended = false;
 
         if (pSavedInstanceState != null) {
@@ -83,14 +104,40 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     protected void onStart() {
         super.onStart();
 
-        mLocationClient.connect();
+        if (!mLocationClient.isConnected()) {
+            mLocationClient.connect();
+        }
     }
 
     @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
+    protected void onPause() {
+        super.onPause();
 
-        outState.putBoolean(FORCE_CAMERA_POSITION, false);
+        pausedTime = System.currentTimeMillis();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (pausedTime != null) {
+            if ((System.currentTimeMillis() - pausedTime) > Constants.MAP_TIMER_REFRESH_IN_MILLISECONDES) {
+                //Too much time has passed, a refresh is needed
+                setMapStationsOnTick();
+                timer.postDelayed(timeRunnable, Constants.MAP_TIMER_REFRESH_IN_MILLISECONDES);
+            } else {
+                timer.postDelayed(timeRunnable, Constants.MAP_TIMER_REFRESH_IN_MILLISECONDES - (System.currentTimeMillis() - pausedTime));
+            }
+
+            pausedTime = null;
+        }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle pOutState) {
+        super.onSaveInstanceState(pOutState);
+
+        pOutState.putBoolean(FORCE_CAMERA_POSITION, false);
     }
 
     private void setUpMapIfNeeded() {
@@ -103,7 +150,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 mMap.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
                     @Override
                     public void onCameraChange(CameraPosition cameraPosition) {
-                        setMapStations();
+                    setMapStations(false);
                     }
                 });
 
@@ -117,29 +164,64 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         }
     }
 
-    private void setMapStations() {
-        if (stations == null) {
-            if (mStationsRequestSended == false) {
-                mStationsRequestSended = true;
-                WSRequest request = new WSRequest(this, Constants.JCD_URL);
-                request.withParam(Constants.JCD_API_KEY, ((App) getApplication()).getApiKey(Constants.JCD_APP_API_KEY));
+    private void setMapStationsOnTick() {
+        if (stations != null) {
+            Log.d(this.getClass().getName(), "Call stations WS");
+            stations = null;
+            setMapStations();
+        }
+    }
+
+    private void setMapStationsRequest(boolean pDoInBackbround) {
+        if (mStationsRequestSended == false) {
+            mStationsRequestSended = true;
+            WSRequest request = new WSRequest(this, Constants.JCD_URL);
+            request.withParam(Constants.JCD_API_KEY, ((App) getApplication()).getApiKey(Constants.JCD_APP_API_KEY));
+            if (pDoInBackbround == true) {
+                request.handleWith(new WSSilentHandler() {
+                    @Override
+                    public void onResult(Context context, JSONObject result) {
+                        setMapStationsResult(result);
+                    }
+                });
+            } else {
                 request.handleWith(new WSDefaultHandler() {
                     @Override
                     public void onResult(Context context, JSONObject result) {
-                        JSONArray stationsJSON = (JSONArray) result.opt("list");
-
-                        stations = new ArrayList<Station>();
-                        for (int i = 0; i < stationsJSON.length(); i++) {
-                            stations.add(new Station(stationsJSON.optJSONObject(i)));
-                        }
-
-                        setMapStations();
+                        setMapStationsResult(result);
                     }
                 });
-
-                request.call();
             }
+
+            request.call();
+        }
+    }
+
+    private void setMapStationsResult(JSONObject result) {
+        JSONArray stationsJSON = (JSONArray) result.opt("list");
+
+        Log.i(this.getClass().getName(), "Stations received : " + stationsJSON.length() + " stations");
+
+        stations = new ArrayList<Station>();
+        for (int i = 0; i < stationsJSON.length(); i++) {
+            stations.add(new Station(stationsJSON.optJSONObject(i)));
+        }
+
+        mStationsRequestSended = false;
+
+        mMap.clear();
+        setMapStations();
+    }
+
+    private void setMapStations() {
+        setMapStations(true);
+    }
+
+    private void setMapStations(boolean pDoInBackbround) {
+        if (stations == null) {
+            setMapStationsRequest(pDoInBackbround);
         } else {
+            Log.d(this.getClass().getName(), "Set up position");
             LatLngBounds bounds = mMap.getProjection().getVisibleRegion().latLngBounds;
             LatLng mapCenter = mMap.getCameraPosition().target;
             LatLng userPos = new LatLng(mLocationClient.getLastLocation().getLatitude(), mLocationClient.getLastLocation().getLongitude());

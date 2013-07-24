@@ -9,6 +9,7 @@ public interface Constants {
     public static final Integer MAP_DEFAULT_USER_ZOOM = 15;
     public static final Integer MAP_ANIMATE_TIME = 500;
     public static final Integer MAP_STATIONS_DIST_LIMIT = 5000;
+    public static final Integer MAP_TIMER_REFRESH_IN_MILLISECONDES = 300000;
 
     public static final String JCD_URL = "https://api.jcdecaux.com/vls/v1/stations";
     public static final String JCD_API_KEY = "apiKey";
