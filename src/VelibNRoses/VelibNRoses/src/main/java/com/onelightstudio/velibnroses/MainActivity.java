@@ -4,7 +4,6 @@ import android.content.Context;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
-import android.util.Log;
 import android.view.Window;
 import android.widget.Toast;
 
@@ -85,6 +84,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         super.onStart();
 
         mLocationClient.connect();
+        Log.d("TEST UN PEU LONG MAIS PAS TROP NON PLUS");
     }
 
     @Override
