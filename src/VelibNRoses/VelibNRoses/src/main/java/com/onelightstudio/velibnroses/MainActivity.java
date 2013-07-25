@@ -52,7 +52,6 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     @Override
     public void onConnected(Bundle bundle) {
         if (mForceCameraPosition == true) {
-            LatLng latlng;
             Location userLocation = mLocationClient.getLastLocation();
             if (userLocation != null) {
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(userLocation.getLatitude(), userLocation.getLongitude()), Constants.MAP_DEFAULT_USER_ZOOM), Constants.MAP_ANIMATE_TIME, null);
