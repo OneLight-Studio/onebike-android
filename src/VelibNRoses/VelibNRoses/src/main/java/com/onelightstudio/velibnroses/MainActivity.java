@@ -53,7 +53,9 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     public void onConnected(Bundle bundle) {
         if (mForceCameraPosition == true) {
             Location userLocation = mLocationClient.getLastLocation();
-            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(userLocation.getLatitude(), userLocation.getLongitude()), Constants.MAP_DEFAULT_USER_ZOOM), Constants.MAP_ANIMATE_TIME, null);
+            if (userLocation != null) {
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(userLocation.getLatitude(), userLocation.getLongitude()), Constants.MAP_DEFAULT_USER_ZOOM), Constants.MAP_ANIMATE_TIME, null);
+            }
         }
     }
 
@@ -78,7 +80,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
             @Override
             public void run() {
-                Log.d(this.getClass().getName(), "Refresh Map Tick");
+                Log.d("Refresh Map Tick");
                 if (pausedTime == null) {
                     setMapStationsOnTick();
 
@@ -150,7 +152,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 mMap.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
                     @Override
                     public void onCameraChange(CameraPosition cameraPosition) {
-                    setMapStations(false);
+                        setMapStations(false);
                     }
                 });
 
@@ -166,7 +168,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
     private void setMapStationsOnTick() {
         if (stations != null) {
-            Log.d(this.getClass().getName(), "Call stations WS");
+            Log.d("Call stations WS");
             stations = null;
             setMapStations();
         }
@@ -200,7 +202,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private void setMapStationsResult(JSONObject result) {
         JSONArray stationsJSON = (JSONArray) result.opt("list");
 
-        Log.i(this.getClass().getName(), "Stations received : " + stationsJSON.length() + " stations");
+        Log.i("Stations received : " + stationsJSON.length() + " stations");
 
         stations = new ArrayList<Station>();
         for (int i = 0; i < stationsJSON.length(); i++) {
@@ -221,7 +223,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         if (stations == null) {
             setMapStationsRequest(pDoInBackbround);
         } else {
-            Log.d(this.getClass().getName(), "Set up position");
+            Log.d("Set up position");
             LatLngBounds bounds = mMap.getProjection().getVisibleRegion().latLngBounds;
             LatLng mapCenter = mMap.getCameraPosition().target;
             LatLng userPos = new LatLng(mLocationClient.getLastLocation().getLatitude(), mLocationClient.getLastLocation().getLongitude());
