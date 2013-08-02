@@ -204,21 +204,21 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         }
     }
 
-    private void setMapStationsRequest(boolean pDoInBackground) {
+    private void setMapStationsRequest(final boolean pDoInBackground) {
         WSRequest request = new WSRequest(this, Constants.JCD_URL);
         request.withParam(Constants.JCD_API_KEY, ((App) getApplication()).getApiKey(Constants.JCD_APP_API_KEY));
         if (pDoInBackground) {
             request.handleWith(new WSSilentHandler() {
                 @Override
                 public void onResult(Context context, JSONObject result) {
-                    setMapStationsResult(result);
+                    setMapStationsResult(result, pDoInBackground);
                 }
             });
         } else {
             request.handleWith(new WSDefaultHandler() {
                 @Override
                 public void onResult(Context context, JSONObject result) {
-                    setMapStationsResult(result);
+                    setMapStationsResult(result, pDoInBackground);
                 }
             });
         }
@@ -226,7 +226,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         request.call();
     }
 
-    private void setMapStationsResult(final JSONObject result) {
+    private void setMapStationsResult(final JSONObject result, final boolean inBackground) {
         new AsyncTask<Void, Void, Void>() {
             @Override
             protected synchronized Void doInBackground(Void... voids) {
@@ -251,21 +251,24 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                     stations.add(idx, station);
                 }
 
-                mStationsRequestSent = false;
-
                 return null;
             }
 
             @Override
             protected void onPreExecute() {
-                setProgressBarIndeterminateVisibility(true);
+                if (!inBackground) {
+                    setProgressBarIndeterminateVisibility(true);
+                }
             }
 
             @Override
             protected void onPostExecute(Void aVoid) {
-                setProgressBarIndeterminateVisibility(false);
+                if (!inBackground) {
+                    setProgressBarIndeterminateVisibility(false);
+                }
                 mMap.clear();
                 setMapStations();
+                mStationsRequestSent = false;
             }
         }.execute();
     }
@@ -274,9 +277,9 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         setMapStations(true);
     }
 
-    private void setMapStations(boolean pDoInBackbround) {
+    private void setMapStations(boolean pDoInBackground) {
         if (stations == null) {
-            setMapStationsRequest(pDoInBackbround);
+            setMapStationsRequest(pDoInBackground);
         } else {
             final ArrayList<Station> stationsToDisplay = new ArrayList<Station>();
             for (int i = 0; i < Constants.MAP_MAX_STATION_MARKERS; i++) {
@@ -301,7 +304,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         }
     }
 
-    private static long getDistance(LatLng point1, LatLng point2) {
+    private long getDistance(LatLng point1, LatLng point2) {
         double lat1 = point1.latitude;
         double lng1 = point1.longitude;
         double lat2 = point2.latitude;

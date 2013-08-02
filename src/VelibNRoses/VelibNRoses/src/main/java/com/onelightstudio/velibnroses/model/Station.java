@@ -33,6 +33,8 @@ public class Station {
     private static final int MARKER_STANDS_X_MIN = 19;
     private static final int MARKER_STANDS_X_MAX = 22;
     private static final int MARKER_STANDS_Y = 30;
+    private static final float MARKER_ANCHOR_U = 0.7f;
+    private static final float MARKER_ANCHOR_V = 0.9f;
 
     private static Bitmap markerBitmap;
     private static Bitmap markerBitmapNoBike;
@@ -82,13 +84,14 @@ public class Station {
     public void showOnMap(GoogleMap pMap) {
         if (marker == null && markerOptions != null) {
             marker = pMap.addMarker(markerOptions);
+            //pMap.addMarker(new MarkerOptions().position(latLng).title(name).icon(BitmapDescriptorFactory.defaultMarker()));
         }
     }
 
     public void prepareMarker(Context ctx) {
         if (markerOptions == null) {
             Bitmap bmp = createBitmap(ctx);
-            markerOptions = new MarkerOptions().position(latLng).title(name).icon(BitmapDescriptorFactory.fromBitmap(bmp));
+            markerOptions = new MarkerOptions().position(latLng).title(name).icon(BitmapDescriptorFactory.fromBitmap(bmp)).anchor(MARKER_ANCHOR_U, MARKER_ANCHOR_V);
             bmp.recycle();
         }
     }
