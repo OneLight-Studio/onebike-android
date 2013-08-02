@@ -27,13 +27,14 @@
 
     <application
             android:allowBackup="true"
+            android:hardwareAccelerated="false"
             android:icon="@drawable/ic_launcher"
+            android:logo="@drawable/logo"
+            android:theme="@style/Theme.OneBike"
             android:label="@string/app_name"
-            android:theme="@style/AppTheme"
             android:name="com.onelightstudio.velibnroses.App">
         <activity
-                android:name="com.onelightstudio.velibnroses.MainActivity"
-                android:label="@string/app_name">
+                android:name="com.onelightstudio.velibnroses.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
