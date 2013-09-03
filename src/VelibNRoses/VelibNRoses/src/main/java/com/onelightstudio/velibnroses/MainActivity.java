@@ -144,7 +144,9 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     public void onConnected(Bundle bundle) {
         if (mForceCameraPosition == true) {
             Location userLocation = mLocationClient.getLastLocation();
-            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(userLocation.getLatitude(), userLocation.getLongitude()), Constants.MAP_DEFAULT_USER_ZOOM), Constants.MAP_ANIMATE_TIME, null);
+            if (userLocation != null) {
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(userLocation.getLatitude(), userLocation.getLongitude()), Constants.MAP_DEFAULT_USER_ZOOM), Constants.MAP_ANIMATE_TIME, null);
+            }
         }
     }
 
@@ -282,7 +284,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 mMap.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
                     @Override
                     public void onCameraChange(CameraPosition cameraPosition) {
-                    setMapStations(false);
+                        setMapStations(false);
                     }
                 });
 
@@ -298,7 +300,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
     private void setMapStationsOnTick() {
         if (stations != null) {
-            Log.d("Call station WS");
+            Log.d("Call stations WS");
             stations = null;
             setMapStations();
         }
