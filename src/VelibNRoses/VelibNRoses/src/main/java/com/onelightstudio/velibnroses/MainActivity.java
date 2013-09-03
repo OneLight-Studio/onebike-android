@@ -2,6 +2,7 @@ package com.onelightstudio.velibnroses;
 
 import android.content.Context;
 import android.location.Location;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.FragmentActivity;
@@ -12,11 +13,10 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesClient;
 import com.google.android.gms.location.LocationClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.CameraPosition;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.onelightstudio.velibnroses.model.Station;
 import com.onelightstudio.velibnroses.ws.WSDefaultHandler;
 import com.onelightstudio.velibnroses.ws.WSRequest;
@@ -25,9 +25,13 @@ import com.onelightstudio.velibnroses.ws.WSSilentHandler;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.security.Timestamp;
 import java.util.ArrayList;
-import java.util.Date;
+
+import pl.mg6.android.maps.extensions.ClusteringSettings;
+import pl.mg6.android.maps.extensions.GoogleMap;
+import pl.mg6.android.maps.extensions.Marker;
+import pl.mg6.android.maps.extensions.SupportMapFragment;
+
 
 public class MainActivity extends FragmentActivity implements GooglePlayServicesClient.ConnectionCallbacks, GooglePlayServicesClient.OnConnectionFailedListener {
 
@@ -37,7 +41,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private boolean mForceCameraPosition;
     private LocationClient mLocationClient;
     private ArrayList<Station> stations;
-    private boolean mStationsRequestSended;
+    private boolean mStationsRequestSent;
     private Handler timer;
     private Runnable timeRunnable;
     private Long pausedTime;
@@ -74,6 +78,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         super.onCreate(pSavedInstanceState);
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
         setContentView(R.layout.activity_main);
+        getActionBar().setDisplayShowTitleEnabled(false);
 
         //Start timer
         timeRunnable = new Runnable() {
@@ -91,7 +96,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         timer = new Handler();
         timer.post(timeRunnable);
 
-        mStationsRequestSended = false;
+        mStationsRequestSent = false;
 
         if (pSavedInstanceState != null) {
             mForceCameraPosition = pSavedInstanceState.getBoolean(FORCE_CAMERA_POSITION);
@@ -145,20 +150,43 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private void setUpMapIfNeeded() {
         // Do a null check to confirm that we have not already instantiated the map.
         if (mMap == null) {
-            mMap = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getMap();
+            mMap = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getExtendedMap();
             // Check if we were successful in obtaining the map.
             if (mMap != null) {
                 mMap.setMyLocationEnabled(true);
-                mMap.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
-                    @Override
-                    public void onCameraChange(CameraPosition cameraPosition) {
-                        setMapStations(false);
-                    }
-                });
-
                 if (mForceCameraPosition) {
                     mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Double.valueOf(Constants.MAP_DEFAULT_LAT), Constants.MAP_DEFAULT_LNG), Constants.MAP_DEFAULT_ZOOM));
                 }
+
+                // clustering
+                ClusteringSettings clusteringSettings = new ClusteringSettings();
+                ClusteringSettings.IconDataProvider iconDataProvider = new ClusteringSettings.IconDataProvider() {
+                    @Override
+                    public MarkerOptions getIconData(int markersCount) {
+                        return new MarkerOptions().icon(BitmapDescriptorFactory.fromResource(R.drawable.station_cluster));
+                    }
+                };
+                clusteringSettings.iconDataProvider(iconDataProvider);
+                clusteringSettings.clusterSize(80);
+                clusteringSettings.addMarkersDynamically(true);
+                mMap.setClustering(clusteringSettings);
+                mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+                    @Override
+                    public boolean onMarkerClick(Marker marker) {
+                        if (marker.isCluster()) {
+                            float zoomLevel = Float.MAX_VALUE;
+                            for (Marker innerMarker : marker.getMarkers()) {
+                                float minZoomLevel = mMap.getMinZoomLevelNotClustered(innerMarker);
+                                if (minZoomLevel < zoomLevel) {
+                                    zoomLevel = minZoomLevel;
+                                }
+                            }
+                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(marker.getPosition(), zoomLevel));
+                            return true;
+                        }
+                        return false;
+                    }
+                });
             } else {
                 //Tell the user to check its google play services
                 Toast.makeText(this, R.string.error_google_play_service, Toast.LENGTH_LONG).show();
@@ -167,81 +195,119 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     }
 
     private void setMapStationsOnTick() {
-        if (stations != null) {
+        if (!mStationsRequestSent) {
+            mStationsRequestSent = true;
             Log.d("Call stations WS");
+            boolean inBackground = stations != null;
             stations = null;
-            setMapStations();
+            setMapStations(inBackground);
         }
     }
 
-    private void setMapStationsRequest(boolean pDoInBackbround) {
-        if (mStationsRequestSended == false) {
-            mStationsRequestSended = true;
-            WSRequest request = new WSRequest(this, Constants.JCD_URL);
-            request.withParam(Constants.JCD_API_KEY, ((App) getApplication()).getApiKey(Constants.JCD_APP_API_KEY));
-            if (pDoInBackbround == true) {
-                request.handleWith(new WSSilentHandler() {
-                    @Override
-                    public void onResult(Context context, JSONObject result) {
-                        setMapStationsResult(result);
+    private void setMapStationsRequest(final boolean pDoInBackground) {
+        WSRequest request = new WSRequest(this, Constants.JCD_URL);
+        request.withParam(Constants.JCD_API_KEY, ((App) getApplication()).getApiKey(Constants.JCD_APP_API_KEY));
+        if (pDoInBackground) {
+            request.handleWith(new WSSilentHandler() {
+                @Override
+                public void onResult(Context context, JSONObject result) {
+                    setMapStationsResult(result, pDoInBackground);
+                }
+            });
+        } else {
+            request.handleWith(new WSDefaultHandler() {
+                @Override
+                public void onResult(Context context, JSONObject result) {
+                    setMapStationsResult(result, pDoInBackground);
+                }
+            });
+        }
+
+        request.call();
+    }
+
+    private void setMapStationsResult(final JSONObject result, final boolean inBackground) {
+        new AsyncTask<Void, Void, Void>() {
+            @Override
+            protected synchronized Void doInBackground(Void... voids) {
+                JSONArray stationsJSON = (JSONArray) result.opt("list");
+
+                Log.i("Stations received : " + stationsJSON.length() + " stations");
+
+                stations = new ArrayList<Station>();
+                LatLng userLocation = new LatLng(mLocationClient.getLastLocation().getLatitude(), mLocationClient.getLastLocation().getLongitude());
+                if (userLocation == null) {
+                    userLocation = new LatLng(Constants.MAP_DEFAULT_LAT, Constants.MAP_DEFAULT_LNG);
+                }
+                for (int i = 0; i < stationsJSON.length(); i++) {
+                    Station station = new Station(stationsJSON.optJSONObject(i));
+                    station.distanceFromUser = getDistance(userLocation, station.latLng);
+                    int idx = 0;
+                    for (Station otherStation : stations) {
+                        if (station.distanceFromUser > otherStation.distanceFromUser) {
+                            idx++;
+                        }
                     }
-                });
-            } else {
-                request.handleWith(new WSDefaultHandler() {
-                    @Override
-                    public void onResult(Context context, JSONObject result) {
-                        setMapStationsResult(result);
-                    }
-                });
+                    stations.add(idx, station);
+                }
+
+                return null;
             }
 
-            request.call();
-        }
-    }
+            @Override
+            protected void onPreExecute() {
+                if (!inBackground) {
+                    setProgressBarIndeterminateVisibility(true);
+                }
+            }
 
-    private void setMapStationsResult(JSONObject result) {
-        JSONArray stationsJSON = (JSONArray) result.opt("list");
-
-        Log.i("Stations received : " + stationsJSON.length() + " stations");
-
-        stations = new ArrayList<Station>();
-        for (int i = 0; i < stationsJSON.length(); i++) {
-            stations.add(new Station(stationsJSON.optJSONObject(i)));
-        }
-
-        mStationsRequestSended = false;
-
-        mMap.clear();
-        setMapStations();
+            @Override
+            protected void onPostExecute(Void aVoid) {
+                if (!inBackground) {
+                    setProgressBarIndeterminateVisibility(false);
+                }
+                mMap.clear();
+                setMapStations();
+                mStationsRequestSent = false;
+            }
+        }.execute();
     }
 
     private void setMapStations() {
         setMapStations(true);
     }
 
-    private void setMapStations(boolean pDoInBackbround) {
+    private void setMapStations(boolean pDoInBackground) {
         if (stations == null) {
-            setMapStationsRequest(pDoInBackbround);
+            setMapStationsRequest(pDoInBackground);
         } else {
             Log.d("Set up position");
-            LatLngBounds bounds = mMap.getProjection().getVisibleRegion().latLngBounds;
-            LatLng mapCenter = mMap.getCameraPosition().target;
-            LatLng userPos = new LatLng(mLocationClient.getLastLocation().getLatitude(), mLocationClient.getLastLocation().getLongitude());
 
-            for (Station station : stations) {
-                if (bounds.contains(station.latLng)
-                        && (getDistance(mapCenter, station.latLng) <= Constants.MAP_STATIONS_DIST_LIMIT
-                        || getDistance(userPos, station.latLng) <= Constants.MAP_STATIONS_DIST_LIMIT)
-                        ) {
-                    station.addMarker(mMap);
-                } else {
-                    station.removeMarker();
-                }
+            final ArrayList<Station> stationsToDisplay = new ArrayList<Station>();
+            for (int i = 0; i < Constants.MAP_MAX_STATION_MARKERS; i++) {
+                stationsToDisplay.add(stations.get(i));
             }
+
+            new AsyncTask<Void, Void, Void>() {
+                @Override
+                protected Void doInBackground(Void... voids) {
+                    for (Station station : stationsToDisplay) {
+                        station.prepareMarker(MainActivity.this);
+                    }
+                    return null;
+                }
+
+                @Override
+                protected void onPostExecute(Void aVoid) {
+                    for (Station station : stationsToDisplay) {
+                        station.showOnMap(mMap);
+                    }
+                }
+            }.execute();
         }
     }
 
-    private static long getDistance(LatLng point1, LatLng point2) {
+    private long getDistance(LatLng point1, LatLng point2) {
         double lat1 = point1.latitude;
         double lng1 = point1.longitude;
         double lat2 = point2.latitude;

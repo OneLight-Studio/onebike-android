@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">VelibNRoses</string>
-    <string name="action_settings">Settings</string>
-    <string name="hello_world">Welcome To The Jungle!</string>
+    <string name="app_name">One Bike</string>
     <string name="error">Oops, we got a problem here</string>
     <string name="error_init">Uh oh, failed to init the application</string>
     <string name="error_google_play_service">Please check your google play services install</string>

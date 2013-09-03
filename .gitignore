@@ -7,3 +7,8 @@ src/VelibNRoses/google-play-services_lib/
 src/VelibNRoses/VelibNRoses.iml
 src/VelibNRoses/VelibNRoses/VelibNRoses-VelibNRoses.iml
 src/VelibNRoses/VelibNRoses/src/main/res/raw/api_keys.properties
+src/VelibNRoses/android-maps-extensions/android-maps-extensions.iml
+src/VelibNRoses/android-maps-extensions/.classpath
+src/VelibNRoses/android-maps-extensions/.project
+src/VelibNRoses/android-maps-extensions/bin/
+src/VelibNRoses/android-maps-extensions/build/
