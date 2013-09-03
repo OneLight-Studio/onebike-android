@@ -1,5 +1,140 @@
-<fragment xmlns:android="http://schemas.android.com/apk/res/android"
-          android:id="@+id/map"
-          android:layout_width="match_parent"
-          android:layout_height="match_parent"
-          android:name="com.google.android.gms.maps.SupportMapFragment"/>
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical">
+
+    <RelativeLayout
+        android:id="@+id/search_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="@style/Theme.Onebike.SearchView">
+
+        <EditText
+            android:id="@+id/departure_field"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="8dp"
+            android:layout_toLeftOf="@+id/departure_bikes"
+            android:hint="@string/departure"
+            android:paddingRight="40dp"
+            android:singleLine="true"/>
+
+        <ImageButton
+            android:id="@+id/departure_mylocation_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBottom="@+id/departure_field"
+            android:layout_alignRight="@+id/departure_field"
+            android:layout_alignTop="@+id/departure_field"
+            android:layout_marginRight="5dp"
+            android:background="@android:color/transparent"
+            android:contentDescription="@null"
+            android:onClick="onClick"
+            android:src="@drawable/current_pos" />
+
+        <ProgressBar
+            android:id="@+id/departure_mylocation_progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBottom="@+id/departure_field"
+            android:layout_alignRight="@+id/departure_field"
+            android:layout_alignTop="@+id/departure_field"
+            android:visibility="gone" />
+
+        <EditText
+            android:id="@+id/departure_bikes"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:paddingLeft="40dp"
+            android:minWidth="60dp" />
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/bikes_needed"
+            android:src="@drawable/bikes_needed"
+            android:layout_marginLeft="5dp"
+            android:layout_alignBottom="@+id/departure_bikes"
+            android:layout_alignLeft="@+id/departure_bikes"
+            android:layout_alignTop="@+id/departure_bikes"/>
+
+        <EditText
+            android:id="@+id/arrival_field"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/departure_field"
+            android:layout_toLeftOf="@+id/arrival_stands"
+            android:layout_marginRight="8dp"
+            android:layout_marginTop="8dp"
+            android:hint="@string/arrival"
+            android:paddingRight="40dp"
+            android:singleLine="true" />
+
+        <ImageButton
+            android:id="@+id/arrival_mylocation_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBottom="@+id/arrival_field"
+            android:layout_alignRight="@+id/arrival_field"
+            android:layout_alignTop="@+id/arrival_field"
+            android:layout_marginRight="5dp"
+            android:background="@android:color/transparent"
+            android:contentDescription="@null"
+            android:onClick="onClick"
+            android:src="@drawable/current_pos" />
+
+        <ProgressBar
+            android:id="@+id/arrival_mylocation_progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBottom="@+id/arrival_field"
+            android:layout_alignRight="@+id/arrival_field"
+            android:layout_alignTop="@+id/arrival_field"
+            android:visibility="gone" />
+
+        <EditText
+            android:id="@+id/arrival_stands"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignTop="@id/arrival_field"
+            android:layout_alignParentRight="true"
+            android:paddingLeft="40dp"
+            android:minWidth="60dp"/>
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/stands_needed"
+            android:src="@drawable/stands_needed"
+            android:layout_marginLeft="5dp"
+            android:layout_alignBottom="@+id/arrival_stands"
+            android:layout_alignLeft="@+id/arrival_stands"
+            android:layout_alignTop="@+id/arrival_stands"/>
+
+        <Button
+            android:id="@+id/search_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/arrival_field"
+            android:layout_marginTop="8dp"
+            android:text="@string/search"
+            android:onClick="onClick" />
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/map_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="invisible"
+        android:layout_alignParentTop="true">
+
+        <fragment
+            android:id="@+id/map"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            class="com.google.android.gms.maps.SupportMapFragment" />
+    </RelativeLayout>
+</RelativeLayout>

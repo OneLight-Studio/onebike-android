@@ -15,6 +15,31 @@
     <!-- Application theme. -->
     <style name="AppTheme" parent="AppBaseTheme">
         <!-- All customizations that are NOT specific to a particular API-level can go here. -->
+        <item name="android:actionBarStyle">@style/Theme.Onebike.ActionBar</item>
+        <item name="android:editTextStyle">@style/Theme.Onebike.SearchView.EditText</item>
+        <item name="android:buttonStyle">@style/Theme.Onebike.SearchView.Button</item>
+    </style>
+
+    <style name="Theme.Onebike.ActionBar" parent="@android:style/Widget.ActionBar">
+        <item name="android:background">@color/green</item>
+    </style>
+
+    <style name="Theme.Onebike.SearchView" parent="@style/AppTheme">
+        <item name="android:background">@android:color/black</item>
+        <item name="android:padding">8dp</item>
+    </style>
+
+    <style name="Theme.Onebike.SearchView.EditText" parent="@android:style/Widget.EditText">
+        <item name="android:background">@android:color/white</item>
+        <item name="android:padding">10dp</item>
+        <item name="android:textSize">16dp</item>
+    </style>
+
+    <style name="Theme.Onebike.SearchView.Button" parent="@android:style/Widget.Button">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:background">@color/green</item>
+        <item name="android:padding">10dp</item>
+        <item name="android:textSize">16dp</item>
     </style>
 
 </resources>

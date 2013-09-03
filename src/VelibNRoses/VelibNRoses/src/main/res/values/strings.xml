@@ -6,6 +6,15 @@
     <string name="hello_world">Welcome To The Jungle!</string>
     <string name="error">Oops, we got a problem here</string>
     <string name="error_init">Uh oh, failed to init the application</string>
-    <string name="error_google_play_service">Please check your google play services install</string>
+    <string name="error_google_play_service">Please check your google play services install</string>7
+
+    <string name="departure">Departure</string>
+    <string name="arrival">Arrival</string>
+    <string name="address_not_found">Cannot find your address</string>
+    <string name="location_unavailable">Cannot find your address</string>
+
+    <string name="stands_number">NB Stands</string>
+    <string name="bikes_number">NB Bikes</string>
+    <string name="search">Search</string>
 
 </resources>
