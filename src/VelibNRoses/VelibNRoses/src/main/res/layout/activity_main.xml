@@ -8,6 +8,7 @@
         android:id="@+id/search_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:visibility="invisible"
         style="@style/Theme.Onebike.SearchView">
 
         <EditText
@@ -27,11 +28,11 @@
             android:layout_alignBottom="@+id/departure_field"
             android:layout_alignRight="@+id/departure_field"
             android:layout_alignTop="@+id/departure_field"
-            android:layout_marginRight="5dp"
-            android:background="@android:color/transparent"
+            android:padding="5dp"
+            android:background="@android:color/white"
             android:contentDescription="@null"
             android:onClick="onClick"
-            android:src="@drawable/current_pos" />
+            android:src="@drawable/ic_current_pos" />
 
         <ProgressBar
             android:id="@+id/departure_mylocation_progress"
@@ -40,6 +41,11 @@
             android:layout_alignBottom="@+id/departure_field"
             android:layout_alignRight="@+id/departure_field"
             android:layout_alignTop="@+id/departure_field"
+            android:background="@android:color/white"
+            android:maxHeight="32dp"
+            android:minHeight="32dp"
+            android:maxWidth="32dp"
+            android:minWidth="32dp"
             android:visibility="gone" />
 
         <EditText
@@ -54,7 +60,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/bikes_needed"
-            android:src="@drawable/bikes_needed"
+            android:src="@drawable/ic_bikes_needed"
             android:layout_marginLeft="5dp"
             android:layout_alignBottom="@+id/departure_bikes"
             android:layout_alignLeft="@+id/departure_bikes"
@@ -79,11 +85,11 @@
             android:layout_alignBottom="@+id/arrival_field"
             android:layout_alignRight="@+id/arrival_field"
             android:layout_alignTop="@+id/arrival_field"
-            android:layout_marginRight="5dp"
-            android:background="@android:color/transparent"
+            android:padding="5dp"
+            android:background="@android:color/white"
             android:contentDescription="@null"
             android:onClick="onClick"
-            android:src="@drawable/current_pos" />
+            android:src="@drawable/ic_current_pos" />
 
         <ProgressBar
             android:id="@+id/arrival_mylocation_progress"
@@ -92,6 +98,10 @@
             android:layout_alignBottom="@+id/arrival_field"
             android:layout_alignRight="@+id/arrival_field"
             android:layout_alignTop="@+id/arrival_field"
+            android:maxHeight="32dp"
+            android:minHeight="32dp"
+            android:maxWidth="32dp"
+            android:minWidth="32dp"
             android:visibility="gone" />
 
         <EditText
@@ -107,7 +117,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/stands_needed"
-            android:src="@drawable/stands_needed"
+            android:src="@drawable/ic_stands_needed"
             android:layout_marginLeft="5dp"
             android:layout_alignBottom="@+id/arrival_stands"
             android:layout_alignLeft="@+id/arrival_stands"
@@ -128,13 +138,12 @@
         android:id="@+id/map_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="invisible"
         android:layout_alignParentTop="true">
 
         <fragment
             android:id="@+id/map"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            class="com.google.android.gms.maps.SupportMapFragment" />
+            class="pl.mg6.android.maps.extensions.SupportMapFragment" />
     </RelativeLayout>
 </RelativeLayout>

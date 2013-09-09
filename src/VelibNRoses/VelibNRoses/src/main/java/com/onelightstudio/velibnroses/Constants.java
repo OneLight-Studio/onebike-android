@@ -3,13 +3,22 @@ package com.onelightstudio.velibnroses;
 public interface Constants {
     public static final Integer EARTH_RADIUS = 6371000;
 
-    public static final Double MAP_DEFAULT_LAT = 43.610477;
-    public static final Double MAP_DEFAULT_LNG = 1.443615;
-    public static final Integer MAP_DEFAULT_ZOOM = 12;
-    public static final Integer MAP_DEFAULT_USER_ZOOM = 15;
-    public static final Integer MAP_ANIMATE_TIME = 500;
-    public static final Integer MAP_STATIONS_DIST_LIMIT = 5000;
-    public static final Integer MAP_TIMER_REFRESH_IN_MILLISECONDES = 300000;
+    public static final double MAP_DEFAULT_LAT = 43.610477;
+    public static final double MAP_DEFAULT_LNG = 1.443615;
+    public static final int MAP_DEFAULT_ZOOM = 12;
+    public static final int MAP_DEFAULT_USER_ZOOM = 15;
+    public static final int MAP_ANIMATE_TIME = 500;
+    public static final int MAP_TIMER_REFRESH_IN_MILLISECONDES = 300000;
+    public static final int MAP_MAX_STATION_MARKERS = 30;
+
+
+    public static final String GOOGLE_API_GEOCODE_URL = "http://maps.google.com/maps/api/geocode/json";
+    public static final String GOOGLE_API_DIRECTIONS_URL = "http://maps.google.com/maps/api/directions/json";
+    public static final String GOOGLE_API_LATLNG = "latlng";
+    public static final String GOOGLE_API_ADDRESS = "address";
+    public static final String GOOGLE_API_SENSOR = "sensor";
+    public static final String GOOGLE_API_ORIGIN = "origin";
+    public static final String GOOGLE_API_DESTINATION = "destination";
 
     public static final String JCD_URL = "https://api.jcdecaux.com/vls/v1/stations";
     public static final String JCD_API_KEY = "apiKey";
