@@ -85,6 +85,9 @@ public class Station {
             //pMap.addMarker(new MarkerOptions().position(latLng).title(name).icon(BitmapDescriptorFactory.defaultMarker()));
         }
     }
+    public void clearMarker() {
+       marker = null;
+    }
 
     public void prepareMarker(Context ctx) {
         if (markerOptions == null) {

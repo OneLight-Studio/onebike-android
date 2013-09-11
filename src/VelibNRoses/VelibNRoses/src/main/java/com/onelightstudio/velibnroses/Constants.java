@@ -11,6 +11,9 @@ public interface Constants {
     public static final int MAP_TIMER_REFRESH_IN_MILLISECONDES = 300000;
     public static final int MAP_MAX_STATION_MARKERS = 30;
 
+    public static final int STATION_SEARCH_RADIUS_IN_METERS = 50;
+    public static final int SEARCH_RESULT_MAX_STATIONS_NUMBER = 3;
+    public static final int STATION_SEARCH_MAX_RADIUS_IN_METERS = 5000;
 
     public static final String GOOGLE_API_GEOCODE_URL = "http://maps.google.com/maps/api/geocode/json";
     public static final String GOOGLE_API_DIRECTIONS_URL = "http://maps.google.com/maps/api/directions/json";
@@ -19,6 +22,11 @@ public interface Constants {
     public static final String GOOGLE_API_SENSOR = "sensor";
     public static final String GOOGLE_API_ORIGIN = "origin";
     public static final String GOOGLE_API_DESTINATION = "destination";
+    public static final String GOOGLE_LAT_KEY = "lat";
+    public static final String GOOGLE_LNG_KEY = "lng";
+    public static final String GOOGLE_API_LANGUAGE = "language";
+    public static final String GOOGLE_API_MODE = "mode";
+
 
     public static final String JCD_URL = "https://api.jcdecaux.com/vls/v1/stations";
     public static final String JCD_API_KEY = "apiKey";

@@ -1,8 +1,8 @@
 package com.onelightstudio.velibnroses;
 
 import android.content.Context;
-import android.location.Address;
-import android.location.Geocoder;
+import android.graphics.Color;
+import java.util.List;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -26,15 +26,19 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.onelightstudio.velibnroses.model.Station;
 import com.onelightstudio.velibnroses.ws.WSDefaultHandler;
 import com.onelightstudio.velibnroses.ws.WSRequest;
 import com.onelightstudio.velibnroses.ws.WSSilentHandler;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import pl.mg6.android.maps.extensions.ClusteringSettings;
 import pl.mg6.android.maps.extensions.GoogleMap;
@@ -71,7 +75,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             location = params[0];
 
             WSRequest request = new WSRequest(MainActivity.this, Constants.GOOGLE_API_GEOCODE_URL);
-            request.withParam(Constants.GOOGLE_API_LATLNG, location.getLatitude()+","+location.getLongitude());
+            request.withParam(Constants.GOOGLE_API_LATLNG, location.getLatitude() + "," + location.getLongitude());
             request.withParam(Constants.GOOGLE_API_SENSOR, "true");
             request.handleWith(new WSSilentHandler() {
                 @Override
@@ -131,8 +135,8 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private EditText arrivalField;
     private ImageButton arrivalLocationButton;
     private ProgressBar arrivalLocationProgress;
-    private Location departureLocation;
-    private Location arrivalLocation;
+    private LatLng departureLocation;
+    private LatLng arrivalLocation;
 
     @Override
     public void onAttachedToWindow() {
@@ -319,6 +323,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                         return false;
                     }
                 });
+
             } else {
                 //Tell the user to check its google play services
                 Toast.makeText(this, R.string.error_google_play_service, Toast.LENGTH_LONG).show();
@@ -367,9 +372,16 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 Log.i("Stations received : " + stationsJSON.length() + " stations");
 
                 stations = new ArrayList<Station>();
-                LatLng userLocation = new LatLng(mLocationClient.getLastLocation().getLatitude(), mLocationClient.getLastLocation().getLongitude());
-                if (userLocation == null) {
-                    userLocation = new LatLng(Constants.MAP_DEFAULT_LAT, Constants.MAP_DEFAULT_LNG);
+                LatLng userLocation = null;
+                try {
+                    userLocation = new LatLng(mLocationClient.getLastLocation().getLatitude(), mLocationClient.getLastLocation().getLongitude());
+                    if (userLocation == null) {
+                        userLocation = new LatLng(Constants.MAP_DEFAULT_LAT, Constants.MAP_DEFAULT_LNG);
+                    }
+                } catch (Exception e) {
+                    if (userLocation == null) {
+                        userLocation = new LatLng(Constants.MAP_DEFAULT_LAT, Constants.MAP_DEFAULT_LNG);
+                    }
                 }
                 for (int i = 0; i < stationsJSON.length(); i++) {
                     Station station = new Station(stationsJSON.optJSONObject(i));
@@ -398,11 +410,20 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 if (!inBackground) {
                     setProgressBarIndeterminateVisibility(false);
                 }
-                mMap.clear();
+                clearMap();
                 setMapStations();
                 mStationsRequestSent = false;
             }
         }.execute();
+    }
+
+    private void clearMap() {
+        if(mMap != null) {
+            mMap.clear();
+        }
+        for(Station station : stations) {
+            station.clearMarker();
+        }
     }
 
     private void setMapStations() {
@@ -469,7 +490,6 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
     private void fillAddressFieldWithCurrentLocation(int field) {
         Location userLocation = mLocationClient.getLastLocation();
-
         if (userLocation == null) {
             Toast.makeText(this, R.string.location_unavailable, Toast.LENGTH_LONG).show();
         } else {
@@ -478,39 +498,212 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     }
 
     private void searchBikesStandsPath() {
-        if (departureField.getText().length() == 0) {
+        if (departureField.getText().toString().trim().length() == 0) {
             Toast.makeText(this, R.string.departure_unavailable, Toast.LENGTH_LONG).show();
-        } else if(arrivalField.getText().length() == 0) {
+        } else if (arrivalField.getText().toString().trim().length() == 0) {
             Toast.makeText(this, R.string.arrival_unavailable, Toast.LENGTH_LONG).show();
         } else {
             departureLocation = null;
             arrivalLocation = null;
-            findStationsFromAddress(departureField.getText().toString(), FIELD_DEPARTURE);
-            findStationsFromAddress(arrivalField.getText().toString(), FIELD_ARRIVAL);
-        }
-    }
 
-    private void findStationsFromAddress(String address, int fieldId) {
-        WSRequest request = new WSRequest(MainActivity.this, Constants.GOOGLE_API_DIRECTIONS_URL);
-        request.withParam(Constants.GOOGLE_API_ADDRESS, address);
-        request.withParam(Constants.GOOGLE_API_SENSOR, "true");
-        request.handleWith(new WSDefaultHandler() {
-            @Override
-            public void onResult(Context context, JSONObject result) {
-                JSONArray addressLatLng = (JSONArray) result.opt("results");
-                if (addressLatLng.length() > 0) {
-                    /*TODO
+              /*TODO
                     Remplir les 2 localisations
                     Créer la liste des stations (max 3) les plus proches
                     Pour la première station de chaque
-                    Requête "directions" http://maps.googleapis.com/maps/api/directions/json?origin=Toronto&destination=Montreal&sensor=true&mode=walking
+                    Requête "directions" http://maps.googleapis.com/maps/api/directions/json?origin=Toronto&destination=Montreal&sensor=false&avoid=highways&mode=bicycling
                     Polyline à partir de routes[0]["overview_polyline"]["points"]
                     Dessiner le polyline
                     Afficher les 3 stations conservées
                     */
+
+            findStationsFromAddress(departureField.getText().toString().trim(), 1, new WSDefaultHandler() {
+                @Override
+                public void onResult(Context context, JSONObject result) {
+
+                    JSONArray addressLatLng = (JSONArray) result.opt("results");
+                    if (addressLatLng != null && addressLatLng.length() > 0) {
+                        boolean locationFound = false;
+                        JSONObject geometry = addressLatLng.optJSONObject(0).optJSONObject("geometry");
+                        if(geometry != null){
+                            JSONObject location = geometry.optJSONObject("location");
+                            if(location != null){
+                                locationFound = true;
+                                double lat = location.optDouble(Constants.GOOGLE_LAT_KEY);
+                                double lng = location.optDouble(Constants.GOOGLE_LNG_KEY);
+                                departureLocation = new LatLng(lat,lng);
+                            }
+                        }
+
+                        if(locationFound){
+                            findStationsFromAddress(arrivalField.getText().toString().trim(), 1, new WSDefaultHandler() {
+                                @Override
+                                public void onResult(Context context, JSONObject result) {
+
+                                    JSONArray addressLatLng = (JSONArray) result.opt("results");
+                                    if (addressLatLng != null && addressLatLng.length() > 0) {
+                                        boolean locationFound = false;
+                                        JSONObject geometry = addressLatLng.optJSONObject(0).optJSONObject("geometry");
+                                        if(geometry != null){
+                                            JSONObject location = geometry.optJSONObject("location");
+                                            if(location != null){
+                                                locationFound = true;
+                                                double lat = location.optDouble(Constants.GOOGLE_LAT_KEY);
+                                                double lng = location.optDouble(Constants.GOOGLE_LNG_KEY);
+                                                arrivalLocation = new LatLng(lat,lng);
+                                            }
+                                        }
+
+                                        if(locationFound){
+                                            ArrayList<Station> departureStations = MainActivity.this.findStationsFromLocation(departureLocation, 1, FIELD_DEPARTURE);
+                                            ArrayList<Station> arrivalStations = MainActivity.this.findStationsFromLocation(arrivalLocation, 1, FIELD_ARRIVAL);
+
+                                            if(mMap != null){
+                                                clearMap();
+
+
+                                                final ArrayList<Station> stationsToDisplay = new ArrayList<Station>();
+
+                                                for(Station station : departureStations){
+                                                    stationsToDisplay.add(station);
+                                                }
+                                                for(Station station : arrivalStations){
+                                                    stationsToDisplay.add(station);
+                                                }
+
+                                                new AsyncTask<Void, Void, Void>() {
+                                                    @Override
+                                                    protected Void doInBackground(Void... voids) {
+                                                        for (Station station : stationsToDisplay) {
+                                                            station.prepareMarker(MainActivity.this);
+                                                        }
+                                                        return null;
+                                                    }
+
+                                                    @Override
+                                                    protected void onPostExecute(Void aVoid) {
+                                                        for (Station station : stationsToDisplay) {
+                                                            station.showOnMap(mMap);
+                                                        }
+                                                    }
+                                                }.execute();
+
+
+                                                drawRouteFromStationDeparture(departureStations.get(0), arrivalStations.get(0));
+
+                                            }
+
+                                        } else {
+                                            Toast.makeText(MainActivity.this, R.string.arrival_unavailable, Toast.LENGTH_LONG).show();
+                                        }
+                                    }
+                                }
+                            });
+                        } else {
+                            Toast.makeText(MainActivity.this, R.string.departure_unavailable, Toast.LENGTH_LONG).show();
+                        }
+                    }
+                }
+            });
+
+
+
+        }
+    }
+
+
+    private void drawRouteFromStationDeparture(Station departure, Station arrival) {
+        WSRequest request = new WSRequest(MainActivity.this, Constants.GOOGLE_API_DIRECTIONS_URL);
+        request.withParam(Constants.GOOGLE_API_ORIGIN, departure.lat+","+departure.lng);
+        request.withParam(Constants.GOOGLE_API_DESTINATION, arrival.lat+","+arrival.lng);
+        request.withParam(Constants.GOOGLE_API_LANGUAGE, "FR");
+        request.withParam(Constants.GOOGLE_API_MODE, "walking");
+        request.withParam(Constants.GOOGLE_API_SENSOR, "true");
+        request.handleWith(new WSDefaultHandler() {
+            @Override
+            public void onResult(Context context, JSONObject result) {
+
+                if("OK".equals(result.optString("status"))){
+
+                    //myMap.addMarker(new MarkerOptions().position(centerLatLng).icon(BitmapDescriptorFactory.fromResource(R.drawable.redpin_marker)));
+                    //myMap.addMarker(new MarkerOptions().position(new LatLng(myCurLocation.getLatitude(), myCurLocation.getLongitude())).icon(BitmapDescriptorFactory.fromResource(R.drawable.redpin_marker)));
+                    try {
+
+                        JSONArray routeArray = result.getJSONArray("routes");
+                        JSONObject routes = routeArray.getJSONObject(0);
+                        JSONObject overviewPolylines = routes.getJSONObject("overview_polyline");
+                        String encodedString = overviewPolylines.getString("points");
+                        List<LatLng> list = Util.decodePoly(encodedString);
+
+                        PolylineOptions options = new PolylineOptions().width(5).color(Color.GREEN).geodesic(true);
+                        for (int z = 0; z < list.size(); z++) {
+                            LatLng point = list.get(z);
+                            options.add(point);
+                        }
+                        /*line =*/ mMap.addPolyline(options);
+
+                    } catch (JSONException e) {
+                        Toast.makeText(MainActivity.this, R.string.error, Toast.LENGTH_LONG).show();
+                    }
+                } else {
+                    Toast.makeText(MainActivity.this, R.string.error, Toast.LENGTH_LONG).show();
                 }
             }
         });
         request.call();
+    }
+
+    private void findStationsFromAddress(String address, int bikesNumber, WSDefaultHandler handler) {
+        WSRequest request = new WSRequest(MainActivity.this, Constants.GOOGLE_API_GEOCODE_URL);
+        request.withParam(Constants.GOOGLE_API_ADDRESS, address);
+        request.withParam(Constants.GOOGLE_API_SENSOR, "true");
+        request.handleWith(handler);
+        request.call();
+    }
+
+
+    private ArrayList<Station> findStationsFromLocation(LatLng location, int bikesNumber, int fieldId) {
+
+        int matchingStationNumber = 0;
+        int radius = Constants.STATION_SEARCH_RADIUS_IN_METERS;
+        ArrayList<Station> matchingStations = new ArrayList<Station>();
+
+        while (matchingStationNumber < Constants.SEARCH_RESULT_MAX_STATIONS_NUMBER && radius <= Constants.STATION_SEARCH_MAX_RADIUS_IN_METERS) {
+            Map<Station, Long> distanceStations = new HashMap<Station, Long>();
+            // find all stations distance for a radius
+            for (Station station : stations) {
+                if (!Double.isNaN(station.lat) && !Double.isNaN(station.lng)) {
+                    Long distance = Long.valueOf(MainActivity.this.getDistance(location, station.latLng));
+                    if (!distanceStations.containsKey(station) && distance.longValue() <= radius) {
+                        if(fieldId == FIELD_DEPARTURE) {
+                            if (station.availableBikes >= bikesNumber) {
+                                distanceStations.put(station, distance);
+                            }
+                        } else {
+                            if (station.availableBikeStands >= bikesNumber) {
+                                distanceStations.put(station, distance);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // sort station by distance and get the first SEARCH_RESULT_MAX_STATIONS_NUMBER stations
+            distanceStations = Util.sortMapByValues(distanceStations);
+            for (Map.Entry<Station, Long> entry : distanceStations.entrySet()) {
+                if (matchingStationNumber < Constants.SEARCH_RESULT_MAX_STATIONS_NUMBER) {
+                    if (!matchingStations.contains(entry.getKey())) {
+                        matchingStations.add(entry.getKey());
+                        matchingStationNumber++;
+                    }
+                } else {
+                    // station max number is reached for this location
+                    break;
+                }
+            }
+
+            radius += Constants.STATION_SEARCH_RADIUS_IN_METERS;
+        }
+
+        return matchingStations;
     }
 }
