@@ -9,7 +9,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:visibility="invisible"
-        style="@style/Theme.Onebike.SearchView">
+        style="@style/Theme.OneBike.SearchView">
 
         <EditText
             android:id="@+id/departure_field"
@@ -32,7 +32,7 @@
             android:background="@android:color/white"
             android:contentDescription="@null"
             android:onClick="onClick"
-            android:src="@drawable/ic_current_pos" />
+            android:src="@drawable/ic_current_location" />
 
         <ProgressBar
             android:id="@+id/departure_mylocation_progress"
@@ -60,7 +60,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/bikes_needed"
-            android:src="@drawable/ic_bikes_needed"
+            android:src="@drawable/ic_bikes"
             android:layout_marginLeft="5dp"
             android:layout_alignBottom="@+id/departure_bikes"
             android:layout_alignLeft="@+id/departure_bikes"
@@ -89,7 +89,7 @@
             android:background="@android:color/white"
             android:contentDescription="@null"
             android:onClick="onClick"
-            android:src="@drawable/ic_current_pos" />
+            android:src="@drawable/ic_current_location" />
 
         <ProgressBar
             android:id="@+id/arrival_mylocation_progress"
@@ -117,7 +117,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/stands_needed"
-            android:src="@drawable/ic_stands_needed"
+            android:src="@drawable/ic_stands"
             android:layout_marginLeft="5dp"
             android:layout_alignBottom="@+id/arrival_stands"
             android:layout_alignLeft="@+id/arrival_stands"
@@ -144,6 +144,6 @@
             android:id="@+id/map"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            class="pl.mg6.android.maps.extensions.SupportMapFragment" />
+            class="com.google.android.gms.maps.SupportMapFragment" />
     </RelativeLayout>
 </RelativeLayout>
