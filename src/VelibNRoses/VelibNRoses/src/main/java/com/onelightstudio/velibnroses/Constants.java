@@ -24,8 +24,8 @@ public interface Constants {
     public static final String GOOGLE_API_DESTINATION = "destination";
     public static final String GOOGLE_LAT_KEY = "lat";
     public static final String GOOGLE_LNG_KEY = "lng";
-    public static final String GOOGLE_API_LANGUAGE = "language";
-    public static final String GOOGLE_API_MODE = "mode";
+    public static final String GOOGLE_API_MODE_KEY = "mode";
+    public static final String GOOGLE_API_MODE_VALUE = "walking";
 
 
     public static final String JCD_URL = "https://api.jcdecaux.com/vls/v1/stations";
