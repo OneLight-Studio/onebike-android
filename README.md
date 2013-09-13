@@ -7,8 +7,7 @@ An Android application that makes Velib'Toulouse even more fabulous
 	* Create an environment variable "ANDROID_HOME" to [path_to_android_studio_install]/sdk
 	* Add to PATH, ANDROID_HOME/tools and ANDROID_HOME/platform-tools
 * Open Android Manager with <code>android</code> command and install (or check if already installed)
-	* Android 4.2.2 (API 17) -> SDK Platform
-	* Android 2.2 (API 8) -> SDK Platform
+	* Android 4.3 (API 18) -> SDK Platform
 	* Extras
 		* Google Play Services
 		* Google Repository

@@ -15,15 +15,14 @@ repositories {
 dependencies {
     compile 'com.android.support:support-v4:13.0.0'
     compile 'com.google.android.gms:play-services:3.1.36'
-    compile project(':android-maps-extensions')
 }
 
 android {
-    compileSdkVersion 17
+    compileSdkVersion 18
     buildToolsVersion "17.0.0"
 
     defaultConfig {
         minSdkVersion 14
-        targetSdkVersion 17
+        targetSdkVersion 18
     }
 }
