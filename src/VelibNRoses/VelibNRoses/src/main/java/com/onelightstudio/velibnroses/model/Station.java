@@ -24,15 +24,13 @@ public class Station {
 
     private static final int MARKER_WIDTH = 50;
     private static final int MARKER_HEIGHT = 40;
-    private static final int MARKER_TEXT_SIZE = 22;
-    private static final int MARKER_BIKES_X_MIN = 6;
-    private static final int MARKER_BIKES_X_MAX = 10;
-    private static final int MARKER_BIKES_Y = 17;
-    private static final int MARKER_STANDS_X_MIN = 19;
-    private static final int MARKER_STANDS_X_MAX = 22;
-    private static final int MARKER_STANDS_Y = 30;
-    private static final float MARKER_ANCHOR_U = 0.7f;
-    private static final float MARKER_ANCHOR_V = 0.9f;
+    private static final int MARKER_TEXT_SIZE = 18;
+    private static final int MARKER_BIKES_X_MIN = 9;
+    private static final int MARKER_BIKES_X_MAX = 13;
+    private static final int MARKER_BIKES_Y = 16;
+    private static final int MARKER_STANDS_X_MIN = 9;
+    private static final int MARKER_STANDS_X_MAX = 13;
+    private static final int MARKER_STANDS_Y = 33;
 
     private static Bitmap markerBitmap;
     private static Bitmap markerBitmapNoBike;
@@ -82,14 +80,16 @@ public class Station {
     public void showOnMap(GoogleMap pMap) {
         if (marker == null && markerOptions != null) {
             marker = pMap.addMarker(markerOptions);
-            //pMap.addMarker(new MarkerOptions().position(latLng).title(name).icon(BitmapDescriptorFactory.defaultMarker()));
         }
+    }
+    public void clearMarker() {
+       marker = null;
     }
 
     public void prepareMarker(Context ctx) {
         if (markerOptions == null) {
             Bitmap bmp = createBitmap(ctx);
-            markerOptions = new MarkerOptions().position(latLng).title(name).icon(BitmapDescriptorFactory.fromBitmap(bmp)).anchor(MARKER_ANCHOR_U, MARKER_ANCHOR_V);
+            markerOptions = new MarkerOptions().position(latLng).title(name).icon(BitmapDescriptorFactory.fromBitmap(bmp));
             bmp.recycle();
         }
     }
@@ -97,13 +97,13 @@ public class Station {
     private Bitmap createBitmap(Context ctx) {
         // load any static object if needed
         if (markerBitmap == null) {
-            markerBitmap = BitmapFactory.decodeResource(ctx.getResources(), R.drawable.station);
+            markerBitmap = BitmapFactory.decodeResource(ctx.getResources(), R.drawable.ic_station);
         }
         if (markerBitmapNoBike == null) {
-            markerBitmapNoBike = BitmapFactory.decodeResource(ctx.getResources(), R.drawable.station_no_bike);
+            markerBitmapNoBike = BitmapFactory.decodeResource(ctx.getResources(), R.drawable.ic_station);
         }
         if (markerBitmapNoStand == null) {
-            markerBitmapNoStand = BitmapFactory.decodeResource(ctx.getResources(), R.drawable.station_no_stand);
+            markerBitmapNoStand = BitmapFactory.decodeResource(ctx.getResources(), R.drawable.ic_station);
         }
         if (paint == null) {
             paint = new Paint();

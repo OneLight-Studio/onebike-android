@@ -1,12 +1,23 @@
 package com.onelightstudio.velibnroses;
 
 import android.content.Context;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import java.util.List;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.FragmentActivity;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.View;
 import android.view.Window;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -17,15 +28,19 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.onelightstudio.velibnroses.model.Station;
 import com.onelightstudio.velibnroses.ws.WSDefaultHandler;
 import com.onelightstudio.velibnroses.ws.WSRequest;
 import com.onelightstudio.velibnroses.ws.WSSilentHandler;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import pl.mg6.android.maps.extensions.ClusteringSettings;
 import pl.mg6.android.maps.extensions.GoogleMap;
@@ -33,8 +48,75 @@ import pl.mg6.android.maps.extensions.Marker;
 import pl.mg6.android.maps.extensions.SupportMapFragment;
 
 
-public class MainActivity extends FragmentActivity implements GooglePlayServicesClient.ConnectionCallbacks, GooglePlayServicesClient.OnConnectionFailedListener {
+public class MainActivity extends FragmentActivity implements GooglePlayServicesClient.ConnectionCallbacks, GooglePlayServicesClient.OnConnectionFailedListener, View.OnClickListener {
 
+    class GetAddressTask extends AsyncTask<Location, Void, String> {
+
+        private EditText field;
+        private ImageButton locationButton;
+        private ProgressBar locationProgress;
+        private Location location;
+
+        public GetAddressTask(int fieldId) {
+            switch (fieldId) {
+                case FIELD_DEPARTURE:
+                    field = departureField;
+                    locationButton = departureLocationButton;
+                    locationProgress = departureLocationProgress;
+                    break;
+                case FIELD_ARRIVAL:
+                    field = arrivalField;
+                    locationButton = arrivalLocationButton;
+                    locationProgress = arrivalLocationProgress;
+                    break;
+            }
+        }
+
+        @Override
+        protected String doInBackground(Location... params) {
+            location = params[0];
+
+            WSRequest request = new WSRequest(MainActivity.this, Constants.GOOGLE_API_GEOCODE_URL);
+            request.withParam(Constants.GOOGLE_API_LATLNG, location.getLatitude() + "," + location.getLongitude());
+            request.withParam(Constants.GOOGLE_API_SENSOR, "true");
+            request.handleWith(new WSSilentHandler() {
+                @Override
+                public void onResult(Context context, JSONObject result) {
+                    locationButton.setVisibility(View.VISIBLE);
+                    locationProgress.setVisibility(View.GONE);
+
+                    JSONArray addresses = (JSONArray) result.opt("results");
+                    if (addresses.length() > 0) {
+                        JSONObject address = (JSONObject) addresses.opt(0);
+                        field.setText(address.opt("formatted_address").toString());
+                    } else {
+                        Toast.makeText(MainActivity.this, R.string.address_not_found, Toast.LENGTH_LONG).show();
+                    }
+                }
+            });
+            request.call();
+
+            return "";
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            if (result == null) {
+                locationButton.setVisibility(View.VISIBLE);
+                locationProgress.setVisibility(View.GONE);
+                Toast.makeText(MainActivity.this, R.string.address_not_found, Toast.LENGTH_LONG).show();
+            }
+        }
+
+        @Override
+        protected void onPreExecute() {
+            locationButton.setVisibility(View.GONE);
+            locationProgress.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private static final int FIELD_DEPARTURE = 0;
+    private static final int FIELD_ARRIVAL = 1;
     private final static String FORCE_CAMERA_POSITION = "ForceCameraPosition";
 
     private GoogleMap mMap;
@@ -45,6 +127,18 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private Handler timer;
     private Runnable timeRunnable;
     private Long pausedTime;
+
+    private View searchView;
+    private View mapView;
+    private boolean searchViewVisible;
+    private EditText departureField;
+    private ImageButton departureLocationButton;
+    private ProgressBar departureLocationProgress;
+    private EditText arrivalField;
+    private ImageButton arrivalLocationButton;
+    private ProgressBar arrivalLocationProgress;
+    private LatLng departureLocation;
+    private LatLng arrivalLocation;
 
     @Override
     public void onAttachedToWindow() {
@@ -74,6 +168,39 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     }
 
     @Override
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.departure_mylocation_button:
+                fillAddressFieldWithCurrentLocation(FIELD_DEPARTURE);
+                break;
+            case R.id.arrival_mylocation_button:
+                fillAddressFieldWithCurrentLocation(FIELD_ARRIVAL);
+                break;
+            case R.id.search_button:
+                searchBikesStandsPath();
+                break;
+        }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.map, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_search:
+                toggleSearchViewVisible();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    @Override
     protected void onCreate(Bundle pSavedInstanceState) {
         super.onCreate(pSavedInstanceState);
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
@@ -96,6 +223,17 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         timer = new Handler();
         timer.post(timeRunnable);
 
+        //Init view and elements
+        searchView = findViewById(R.id.search_view);
+        mapView = findViewById(R.id.map_view);
+        departureField = (EditText) findViewById(R.id.departure_field);
+        departureLocationButton = (ImageButton) findViewById(R.id.departure_mylocation_button);
+        departureLocationProgress = (ProgressBar) findViewById(R.id.departure_mylocation_progress);
+        arrivalField = (EditText) findViewById(R.id.arrival_field);
+        arrivalLocationButton = (ImageButton) findViewById(R.id.arrival_mylocation_button);
+        arrivalLocationProgress = (ProgressBar) findViewById(R.id.arrival_mylocation_progress);
+
+        //Station request
         mStationsRequestSent = false;
 
         if (pSavedInstanceState != null) {
@@ -163,7 +301,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 ClusteringSettings.IconDataProvider iconDataProvider = new ClusteringSettings.IconDataProvider() {
                     @Override
                     public MarkerOptions getIconData(int markersCount) {
-                        return new MarkerOptions().icon(BitmapDescriptorFactory.fromResource(R.drawable.station_cluster));
+                        return new MarkerOptions().icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_station_cluster));
                     }
                 };
                 clusteringSettings.iconDataProvider(iconDataProvider);
@@ -187,6 +325,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                         return false;
                     }
                 });
+
             } else {
                 //Tell the user to check its google play services
                 Toast.makeText(this, R.string.error_google_play_service, Toast.LENGTH_LONG).show();
@@ -235,9 +374,16 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 Log.i("Stations received : " + stationsJSON.length() + " stations");
 
                 stations = new ArrayList<Station>();
-                LatLng userLocation = new LatLng(mLocationClient.getLastLocation().getLatitude(), mLocationClient.getLastLocation().getLongitude());
-                if (userLocation == null) {
-                    userLocation = new LatLng(Constants.MAP_DEFAULT_LAT, Constants.MAP_DEFAULT_LNG);
+                LatLng userLocation = null;
+                try {
+                    userLocation = new LatLng(mLocationClient.getLastLocation().getLatitude(), mLocationClient.getLastLocation().getLongitude());
+                    if (userLocation == null) {
+                        userLocation = new LatLng(Constants.MAP_DEFAULT_LAT, Constants.MAP_DEFAULT_LNG);
+                    }
+                } catch (Exception e) {
+                    if (userLocation == null) {
+                        userLocation = new LatLng(Constants.MAP_DEFAULT_LAT, Constants.MAP_DEFAULT_LNG);
+                    }
                 }
                 for (int i = 0; i < stationsJSON.length(); i++) {
                     Station station = new Station(stationsJSON.optJSONObject(i));
@@ -266,11 +412,20 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 if (!inBackground) {
                     setProgressBarIndeterminateVisibility(false);
                 }
-                mMap.clear();
+                clearMap();
                 setMapStations();
                 mStationsRequestSent = false;
             }
         }.execute();
+    }
+
+    private void clearMap() {
+        if(mMap != null) {
+            mMap.clear();
+        }
+        for(Station station : stations) {
+            station.clearMarker();
+        }
     }
 
     private void setMapStations() {
@@ -320,5 +475,205 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.sin(dLng / 2) * Math.sin(dLng / 2) * Math.cos(radLat1) * Math.cos(radLat2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return (long) (Constants.EARTH_RADIUS * c);
+    }
+
+    private void toggleSearchViewVisible() {
+        if (!searchViewVisible) {
+            searchViewVisible = true;
+            searchView.setVisibility(View.VISIBLE);
+            mapView.animate().translationY(searchView.getHeight());
+        } else {
+            searchViewVisible = false;
+            mapView.animate().translationY(0);
+            InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(FragmentActivity.INPUT_METHOD_SERVICE);
+            inputMethodManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
+        }
+    }
+
+    private void fillAddressFieldWithCurrentLocation(int field) {
+        Location userLocation = mLocationClient.getLastLocation();
+        if (userLocation == null) {
+            Toast.makeText(this, R.string.location_unavailable, Toast.LENGTH_LONG).show();
+        } else {
+            new GetAddressTask(field).execute(userLocation);
+        }
+    }
+
+    private void searchBikesStandsPath() {
+        if (departureField.getText().toString().trim().length() == 0) {
+            Toast.makeText(this, R.string.departure_unavailable, Toast.LENGTH_LONG).show();
+        } else if (arrivalField.getText().toString().trim().length() == 0) {
+            Toast.makeText(this, R.string.arrival_unavailable, Toast.LENGTH_LONG).show();
+        } else {
+            departureLocation = null;
+            arrivalLocation = null;
+
+            //Close keyboard
+            InputMethodManager inputManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            inputManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+
+            findStationsFromAddress(departureField.getText().toString().trim(), FIELD_DEPARTURE);
+            findStationsFromAddress(arrivalField.getText().toString().trim(), FIELD_ARRIVAL);
+        }
+    }
+
+    private void findStationsFromAddress(String address, final int fieldId) {
+        WSRequest request = new WSRequest(MainActivity.this, Constants.GOOGLE_API_GEOCODE_URL);
+        request.withParam(Constants.GOOGLE_API_ADDRESS, address);
+        request.withParam(Constants.GOOGLE_API_SENSOR, "true");
+        request.handleWith(new WSDefaultHandler() {
+            @Override
+            public void onResult(Context context, JSONObject result) {
+                JSONArray addressLatLng = (JSONArray) result.opt("results");
+                if (addressLatLng != null && addressLatLng.length() > 0) {
+                    JSONObject geometry = addressLatLng.optJSONObject(0).optJSONObject("geometry");
+                    if (geometry != null) {
+                        JSONObject location = geometry.optJSONObject("location");
+                        Log.e(location.toString());
+                        if (location != null) {
+                            double lat = location.optDouble(Constants.GOOGLE_LAT_KEY);
+                            double lng = location.optDouble(Constants.GOOGLE_LNG_KEY);
+
+                            if (fieldId == FIELD_DEPARTURE) {
+                                departureLocation = new LatLng(lat,lng);
+                            }
+
+                            if (fieldId == FIELD_ARRIVAL) {
+                                arrivalLocation = new LatLng(lat,lng);
+                            }
+
+                            if(departureLocation != null && arrivalLocation != null) {
+                                ArrayList<Station> departureStations = findStationsFromLocation(departureLocation, 1, FIELD_DEPARTURE);
+                                ArrayList<Station> arrivalStations = findStationsFromLocation(arrivalLocation, 1, FIELD_ARRIVAL);
+
+                                if(mMap != null){
+                                    clearMap();
+
+                                    final ArrayList<Station> stationsToDisplay = new ArrayList<Station>();
+
+                                    for(Station station : departureStations){
+                                        stationsToDisplay.add(station);
+                                    }
+                                    for(Station station : arrivalStations){
+                                        stationsToDisplay.add(station);
+                                    }
+
+                                    drawRouteMarkersFromStationDeparture(departureStations.get(0), arrivalStations.get(0), stationsToDisplay);
+                                }
+                            }
+                        } else {
+                            if (fieldId == FIELD_DEPARTURE) {
+                                Toast.makeText(MainActivity.this, R.string.arrival_unavailable, Toast.LENGTH_LONG).show();
+                            }
+
+                            if (fieldId == FIELD_ARRIVAL) {
+                                Toast.makeText(MainActivity.this, R.string.arrival_unavailable, Toast.LENGTH_LONG).show();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        request.call();
+    }
+
+    private void drawRouteMarkersFromStationDeparture(Station departureStation, Station arrivalStation, final ArrayList<Station> stations) {
+        WSRequest request = new WSRequest(MainActivity.this, Constants.GOOGLE_API_DIRECTIONS_URL);
+        request.withParam(Constants.GOOGLE_API_ORIGIN, departureStation.lat+","+departureStation.lng);
+        request.withParam(Constants.GOOGLE_API_DESTINATION, arrivalStation.lat+","+arrivalStation.lng);
+        request.withParam(Constants.GOOGLE_API_MODE_KEY, Constants.GOOGLE_API_MODE_VALUE);
+        request.withParam(Constants.GOOGLE_API_SENSOR, "true");
+        request.handleWith(new WSDefaultHandler() {
+            @Override
+            public void onResult(Context context, JSONObject result) {
+
+                if ("OK".equals(result.optString("status"))) {
+                    JSONArray routeArray = result.optJSONArray("routes");
+                    JSONObject routes = routeArray.optJSONObject(0);
+                    JSONObject overviewPolylines = routes.optJSONObject("overview_polyline");
+                    String encodedString = overviewPolylines.optString("points");
+                    List<LatLng> list = Util.decodePoly(encodedString);
+
+                    PolylineOptions options = new PolylineOptions().width(5).color(getResources().getColor(R.color.green)).geodesic(true);
+                    for (int z = 0; z < list.size(); z++) {
+                        LatLng point = list.get(z);
+                        options.add(point);
+                    }
+                    mMap.addPolyline(options);
+
+                    //Close form
+                    toggleSearchViewVisible();
+
+                    //Show markers
+                    for(Station station : stations) {
+                        station.prepareMarker(MainActivity.this);
+                        station.showOnMap(mMap);
+                    }
+                    mMap.addMarker(new MarkerOptions().position(departureLocation).title(getString(R.string.departure)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_departure)));
+                    mMap.addMarker(new MarkerOptions().position(arrivalLocation).title(getString(R.string.arrival)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_arrival)));
+
+                    //Move camera to show path and stations
+                    LatLngBounds.Builder bld = new LatLngBounds.Builder();
+                    bld.include(departureLocation);
+                    bld.include(arrivalLocation);
+                    for(Station station : stations) {
+                        bld.include(station.latLng);
+                    }
+                    LatLngBounds bounds = bld.build();
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, Display.dpToPx(getResources().getDisplayMetrics(), 50)));
+
+                } else {
+                    Toast.makeText(MainActivity.this, R.string.error, Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+        request.call();
+    }
+
+
+    private ArrayList<Station> findStationsFromLocation(LatLng location, int bikesNumber, int fieldId) {
+
+        int matchingStationNumber = 0;
+        int radius = Constants.STATION_SEARCH_RADIUS_IN_METERS;
+        ArrayList<Station> matchingStations = new ArrayList<Station>();
+
+        while (matchingStationNumber < Constants.SEARCH_RESULT_MAX_STATIONS_NUMBER && radius <= Constants.STATION_SEARCH_MAX_RADIUS_IN_METERS) {
+            Map<Station, Long> distanceStations = new HashMap<Station, Long>();
+            // find all stations distance for a radius
+            for (Station station : stations) {
+                if (!Double.isNaN(station.lat) && !Double.isNaN(station.lng)) {
+                    Long distance = Long.valueOf(MainActivity.this.getDistance(location, station.latLng));
+                    if (!distanceStations.containsKey(station) && distance.longValue() <= radius) {
+                        if(fieldId == FIELD_DEPARTURE) {
+                            if (station.availableBikes >= bikesNumber) {
+                                distanceStations.put(station, distance);
+                            }
+                        } else {
+                            if (station.availableBikeStands >= bikesNumber) {
+                                distanceStations.put(station, distance);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // sort station by distance and get the first SEARCH_RESULT_MAX_STATIONS_NUMBER stations
+            distanceStations = Util.sortMapByValues(distanceStations);
+            for (Map.Entry<Station, Long> entry : distanceStations.entrySet()) {
+                if (matchingStationNumber < Constants.SEARCH_RESULT_MAX_STATIONS_NUMBER) {
+                    if (!matchingStations.contains(entry.getKey())) {
+                        matchingStations.add(entry.getKey());
+                        matchingStationNumber++;
+                    }
+                } else {
+                    // station max number is reached for this location
+                    break;
+                }
+            }
+
+            radius += Constants.STATION_SEARCH_RADIUS_IN_METERS;
+        }
+
+        return matchingStations;
     }
 }
