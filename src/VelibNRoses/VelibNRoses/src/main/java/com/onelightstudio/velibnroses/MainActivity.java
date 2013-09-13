@@ -136,9 +136,11 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private EditText departureField;
     private ImageButton departureLocationButton;
     private ProgressBar departureLocationProgress;
+    private EditText departureBikesField;
     private EditText arrivalField;
     private ImageButton arrivalLocationButton;
     private ProgressBar arrivalLocationProgress;
+    private EditText arrivalStandsField;
     private LatLng departureLocation;
     private LatLng arrivalLocation;
 
@@ -178,9 +180,20 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         departureField = (EditText) findViewById(R.id.departure_field);
         departureLocationButton = (ImageButton) findViewById(R.id.departure_mylocation_button);
         departureLocationProgress = (ProgressBar) findViewById(R.id.departure_mylocation_progress);
+        departureBikesField = (EditText) findViewById(R.id.departure_bikes);
         arrivalField = (EditText) findViewById(R.id.arrival_field);
         arrivalLocationButton = (ImageButton) findViewById(R.id.arrival_mylocation_button);
         arrivalLocationProgress = (ProgressBar) findViewById(R.id.arrival_mylocation_progress);
+        arrivalStandsField = (EditText) findViewById(R.id.arrival_stands);
+
+        departureBikesField.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View view, boolean hasFocus) {
+            if (!hasFocus) {
+                arrivalStandsField.setText(departureBikesField.getText().toString());
+            }
+            }
+        });
 
         //Station request
         loadingStations = false;
@@ -517,8 +530,8 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                                 arrivalLocation = new LatLng(lat, lng);
                             }
                             if (departureLocation != null && arrivalLocation != null) {
-                                ArrayList<Station> departureStations = searchStationsNearLocation(departureLocation, 1, FIELD_DEPARTURE);
-                                ArrayList<Station> arrivalStations = searchStationsNearLocation(arrivalLocation, 1, FIELD_ARRIVAL);
+                                ArrayList<Station> departureStations = searchStationsNearLocation(departureLocation, Integer.valueOf(departureBikesField.getText().toString()), FIELD_DEPARTURE);
+                                ArrayList<Station> arrivalStations = searchStationsNearLocation(arrivalLocation, Integer.valueOf(arrivalStandsField.getText().toString()), FIELD_ARRIVAL);
                                 if (map != null) {
                                     clearMap();
                                     final ArrayList<Station> stationsToDisplay = new ArrayList<Station>();
