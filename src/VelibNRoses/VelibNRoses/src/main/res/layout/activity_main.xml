@@ -11,7 +11,7 @@
         android:visibility="invisible"
         style="@style/Theme.OneBike.SearchView">
 
-        <EditText
+        <AutoCompleteTextView
             android:id="@+id/departure_field"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -70,7 +70,7 @@
             android:layout_alignLeft="@+id/departure_bikes"
             android:layout_alignTop="@+id/departure_bikes"/>
 
-        <EditText
+        <AutoCompleteTextView
             android:id="@+id/arrival_field"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

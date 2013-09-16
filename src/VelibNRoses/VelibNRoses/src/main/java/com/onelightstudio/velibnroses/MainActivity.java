@@ -6,12 +6,15 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.FragmentActivity;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
@@ -133,11 +136,11 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private View searchView;
     private View mapView;
     private boolean searchViewVisible;
-    private EditText departureField;
+    private AutoCompleteTextView departureField;
     private ImageButton departureLocationButton;
     private ProgressBar departureLocationProgress;
     private EditText departureBikesField;
-    private EditText arrivalField;
+    private AutoCompleteTextView arrivalField;
     private ImageButton arrivalLocationButton;
     private ProgressBar arrivalLocationProgress;
     private EditText arrivalStandsField;
@@ -177,21 +180,32 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         //Init view and elements
         searchView = findViewById(R.id.search_view);
         mapView = findViewById(R.id.map_view);
-        departureField = (EditText) findViewById(R.id.departure_field);
+        departureField = (AutoCompleteTextView) findViewById(R.id.departure_field);
         departureLocationButton = (ImageButton) findViewById(R.id.departure_mylocation_button);
         departureLocationProgress = (ProgressBar) findViewById(R.id.departure_mylocation_progress);
         departureBikesField = (EditText) findViewById(R.id.departure_bikes);
-        arrivalField = (EditText) findViewById(R.id.arrival_field);
+        arrivalField = (AutoCompleteTextView) findViewById(R.id.arrival_field);
         arrivalLocationButton = (ImageButton) findViewById(R.id.arrival_mylocation_button);
         arrivalLocationProgress = (ProgressBar) findViewById(R.id.arrival_mylocation_progress);
         arrivalStandsField = (EditText) findViewById(R.id.arrival_stands);
 
-        departureBikesField.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+        departureField.setAdapter(new AddressAdapter(this, departureField.getId()));
+        arrivalField.setAdapter(new AddressAdapter(this, arrivalField.getId()));
+
+        departureBikesField.addTextChangedListener(new TextWatcher() {
             @Override
-            public void onFocusChange(View view, boolean hasFocus) {
-            if (!hasFocus) {
-                arrivalStandsField.setText(departureBikesField.getText().toString());
+            public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+                //Nothing
             }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+                //Nothing
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                arrivalStandsField.setText(editable.toString());
             }
         });
 
@@ -257,10 +271,12 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
+        //Nothing
     }
 
     @Override
     public void onDisconnected() {
+        //Nothing
     }
 
     @Override
@@ -293,6 +309,15 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             case R.id.search_button:
                 startSearch();
                 break;
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (searchViewVisible) {
+            hideSearchForm();
+        } else {
+            super.onBackPressed();
         }
     }
 
@@ -471,11 +496,15 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             searchView.setVisibility(View.VISIBLE);
             mapView.animate().translationY(searchView.getHeight());
         } else {
-            searchViewVisible = false;
-            mapView.animate().translationY(0);
-            InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(FragmentActivity.INPUT_METHOD_SERVICE);
-            inputMethodManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
+            hideSearchForm();
         }
+    }
+
+    private void hideSearchForm() {
+        searchViewVisible = false;
+        mapView.animate().translationY(0);
+        InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(FragmentActivity.INPUT_METHOD_SERVICE);
+        inputMethodManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
     }
 
     private void fillAddressFieldWithCurrentLocation(int field) {
@@ -604,7 +633,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         return matchingStations;
     }
 
-    private void displaySearchResult(Station departureStation, Station arrivalStation, final ArrayList<Station> stations) {
+    private void displaySearchResult(final Station departureStation, final Station arrivalStation, final ArrayList<Station> stations) {
         WSRequest request = new WSRequest(MainActivity.this, Constants.GOOGLE_API_DIRECTIONS_URL);
         request.withParam(Constants.GOOGLE_API_ORIGIN, departureStation.lat + "," + departureStation.lng);
         request.withParam(Constants.GOOGLE_API_DESTINATION, arrivalStation.lat + "," + arrivalStation.lng);
@@ -621,10 +650,14 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                     List<LatLng> list = Util.decodePoly(encodedString);
 
                     PolylineOptions options = new PolylineOptions().width(getResources().getDimensionPixelSize(R.dimen.polyline_width)).color(getResources().getColor(R.color.green)).geodesic(true);
+                    //Start at the station
+                    options.add(departureStation.latLng);
                     for (int z = 0; z < list.size(); z++) {
                         LatLng point = list.get(z);
                         options.add(point);
                     }
+                    //Finish at the station
+                    options.add(arrivalStation.latLng);
                     map.addPolyline(options);
 
                     //Close form
