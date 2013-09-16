@@ -1,6 +1,7 @@
 package com.onelightstudio.velibnroses.model;
 
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.onelightstudio.velibnroses.Constants;
 
@@ -22,7 +23,8 @@ public class Station {
     public int availableBikeStands;
     public int availableBikes;
     public long lastUpdate;
-    public MarkerOptions marker;
+    public MarkerOptions markerOptions;
+    public Marker searchMarker;
 
     public Station(JSONObject pStationJSON) {
         number = pStationJSON.optString(Constants.JCD_NUMBER_KEY);

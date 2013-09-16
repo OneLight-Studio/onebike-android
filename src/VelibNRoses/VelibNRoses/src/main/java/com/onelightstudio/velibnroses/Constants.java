@@ -13,6 +13,7 @@ public interface Constants {
     public static final int STATION_SEARCH_RADIUS_IN_METERS = 50;
     public static final int SEARCH_RESULT_MAX_STATIONS_NUMBER = 3;
     public static final int STATION_SEARCH_MAX_RADIUS_IN_METERS = 5000;
+    public static final int STATION_SEARCH_MIN_RADIUS_IN_METERS = 500;
 
     public static final String GOOGLE_API_GEOCODE_URL = "http://maps.google.com/maps/api/geocode/json";
     public static final String GOOGLE_API_DIRECTIONS_URL = "http://maps.google.com/maps/api/directions/json";
