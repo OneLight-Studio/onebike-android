@@ -14,7 +14,8 @@
     </style>
 
     <style name="Theme.OneBike.ActionButton" parent="android:Widget.Holo.ActionButton">
-        <item name="android:background">@drawable/search_button</item>
+        <item name="android:background">@drawable/action_button</item>
+        <item name="android:minWidth">32dp</item>
     </style>
 
     <style name="Widget.OneBike.ActionBar.TitleTextStyle" parent="android:TextAppearance.Holo.Widget.ActionBar.Title">
