@@ -24,7 +24,9 @@
 
     <style name="Theme.OneBike.SearchView" parent="@style/Theme.OneBike">
         <item name="android:background">@android:color/black</item>
-        <item name="android:padding">12dp</item>
+        <item name="android:paddingRight">12dp</item>
+        <item name="android:paddingLeft">12dp</item>
+        <item name="android:paddingTop">12dp</item>
     </style>
 
     <style name="Theme.OneBike.SearchView.AutoCompleteTextView" parent="android:Widget.Holo.AutoCompleteTextView">

@@ -48,7 +48,10 @@ class AddressAdapter extends ArrayAdapter<String> implements Filterable {
 
     @Override
     public int getCount() {
-        return resultList.size();
+        if(resultList != null){
+            return resultList.size();
+        }
+        return 0;
     }
 
     @Override

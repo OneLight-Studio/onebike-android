@@ -5,6 +5,7 @@ import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Message;
 import android.support.v4.app.FragmentActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -14,6 +15,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -56,7 +58,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
     class GetAddressTask extends AsyncTask<Location, Void, String> {
 
-        private EditText field;
+        private AutoCompleteTextView field;
         private ImageButton locationButton;
         private ProgressBar locationProgress;
         private Location location;
@@ -116,6 +118,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         protected void onPreExecute() {
             locationButton.setVisibility(View.GONE);
             locationProgress.setVisibility(View.VISIBLE);
+            field.setAdapter((ArrayAdapter<String>)null);
         }
     }
 
@@ -153,6 +156,8 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private Station searchMapArrivalStation;
     private boolean searchMapMarkersAdded;
     private Polyline searchMapPolyline;
+    private MenuItem actionSearchMenuItem;
+    private MenuItem actionClearSearchMenuItem;
 
     // ACTIVITY LIFECYCLE
 
@@ -196,8 +201,43 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         arrivalLocationProgress = (ProgressBar) findViewById(R.id.arrival_mylocation_progress);
         arrivalStandsField = (EditText) findViewById(R.id.arrival_stands);
 
-        departureField.setAdapter(new AddressAdapter(this, R.layout.list_item));
-        arrivalField.setAdapter(new AddressAdapter(this, R.layout.list_item));
+        departureField.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+                //Nothing
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+                //Nothing
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                if(departureField.getAdapter() == null) {
+                    departureField.setAdapter(new AddressAdapter(MainActivity.this, R.layout.list_item));
+                }
+            }
+        });
+
+        arrivalField.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+                //Nothing
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+                //Nothing
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                if(arrivalField.getAdapter() == null) {
+                    arrivalField.setAdapter(new AddressAdapter(MainActivity.this, R.layout.list_item));
+                }
+            }
+        });
 
         departureBikesField.addTextChangedListener(new TextWatcher() {
             @Override
@@ -290,6 +330,8 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.map, menu);
+        this.actionSearchMenuItem = menu.findItem(R.id.action_search);
+        this.actionClearSearchMenuItem = menu.findItem(R.id.action_clear_search);
         return true;
     }
 
@@ -298,6 +340,9 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         switch (item.getItemId()) {
             case R.id.action_search:
                 toggleSearchViewVisible();
+                return true;
+            case R.id.action_clear_search:
+                clearSearch();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -315,6 +360,9 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 break;
             case R.id.search_button:
                 startSearch();
+                break;
+            case R.id.hide_search_view_button:
+                hideSearchForm();
                 break;
         }
     }
@@ -517,14 +565,29 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         if (!searchViewVisible) {
             searchViewVisible = true;
             searchView.setVisibility(View.VISIBLE);
+            this.actionSearchMenuItem.setVisible(false);
+            this.actionClearSearchMenuItem.setVisible(false);
             mapView.animate().translationY(searchView.getHeight());
         } else {
             hideSearchForm();
         }
     }
 
+    private void clearSearch() {
+        searchMode = false;
+        actionClearSearchMenuItem.setVisible(false);
+        clearMap();
+        displayStations();
+    }
+
     private void hideSearchForm() {
         searchViewVisible = false;
+        this.actionSearchMenuItem.setVisible(true);
+
+        if(searchMode) {
+            this.actionClearSearchMenuItem.setVisible(true);
+        }
+
         mapView.animate().translationY(0);
         InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(FragmentActivity.INPUT_METHOD_SERVICE);
         inputMethodManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
@@ -547,8 +610,6 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         } else if(stations == null) {
             Toast.makeText(this, R.string.stations_not_available, Toast.LENGTH_LONG).show();
         } else {
-            searchMode = true;
-
             departureLocation = null;
             arrivalLocation = null;
             searchMapDepartureStation = null;
@@ -591,12 +652,18 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                                 searchMapDepartureStations = searchStationsNearLocation(departureLocation, arrivalLocation, Integer.valueOf(departureBikesField.getText().toString()), FIELD_DEPARTURE);
                                 searchMapArrivalStations = searchStationsNearLocation(departureLocation, arrivalLocation, Integer.valueOf(arrivalStandsField.getText().toString()), FIELD_ARRIVAL);
                                 if (map != null && searchMapDepartureStations.size() > 0 && searchMapArrivalStations.size() > 0) {
+
+                                    searchMode = true;
+                                    actionClearSearchMenuItem.setVisible(true);
+
                                     clearMap();
 
                                     searchMapDepartureStation = searchMapDepartureStations.get(0);
                                     searchMapArrivalStation = searchMapArrivalStations.get(0);
 
                                     displaySearchResult();
+
+
                                 } else {
                                     Toast.makeText(MainActivity.this, R.string.path_impossible, Toast.LENGTH_LONG).show();
                                 }

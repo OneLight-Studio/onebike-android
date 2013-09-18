@@ -3,4 +3,9 @@
           android:icon="@drawable/ic_menu_search"
           android:title="@string/search"
           android:showAsAction="always" />
+    <item android:id="@+id/action_clear_search"
+          android:icon="@drawable/ic_close_search"
+          android:title="@string/close_search"
+          android:showAsAction="always"
+          android:visible="false"/>
 </menu>
