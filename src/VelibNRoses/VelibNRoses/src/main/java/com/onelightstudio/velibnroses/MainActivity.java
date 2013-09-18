@@ -691,16 +691,11 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                     JSONObject overviewPolylines = routes.optJSONObject("overview_polyline");
                     String encodedString = overviewPolylines.optString("points");
                     List<LatLng> list = Util.decodePoly(encodedString);
+                    // add the location of the departure and arrival stations
+                    list.add(0, searchMapDepartureStation.latLng);
+                    list.add(searchMapArrivalStation.latLng);
 
-                    PolylineOptions options = new PolylineOptions().width(getResources().getDimensionPixelSize(R.dimen.polyline_width)).color(getResources().getColor(R.color.green)).geodesic(true);
-                    //Start at the station
-                    options.add(searchMapDepartureStation.latLng);
-                    for (int z = 0; z < list.size(); z++) {
-                        LatLng point = list.get(z);
-                        options.add(point);
-                    }
-                    //Finish at the station
-                    options.add(searchMapArrivalStation.latLng);
+                    PolylineOptions options = new PolylineOptions().addAll(list).width(getResources().getDimensionPixelSize(R.dimen.polyline_width)).color(getResources().getColor(R.color.green)).geodesic(true);
                     if (searchMapPolyline != null) {
                         searchMapPolyline.remove();
                     }
