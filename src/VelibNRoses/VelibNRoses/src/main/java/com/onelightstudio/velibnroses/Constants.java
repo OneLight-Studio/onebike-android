@@ -16,6 +16,7 @@ public interface Constants {
 
     public static final String GOOGLE_API_GEOCODE_URL = "http://maps.google.com/maps/api/geocode/json";
     public static final String GOOGLE_API_DIRECTIONS_URL = "http://maps.google.com/maps/api/directions/json";
+    public static final String GOOGLE_API_AUTOCOMPLETE_URL = "https://maps.googleapis.com/maps/api/place/autocomplete/json";
     public static final String GOOGLE_API_LATLNG = "latlng";
     public static final String GOOGLE_API_ADDRESS = "address";
     public static final String GOOGLE_API_SENSOR = "sensor";
@@ -25,6 +26,11 @@ public interface Constants {
     public static final String GOOGLE_LNG_KEY = "lng";
     public static final String GOOGLE_API_MODE_KEY = "mode";
     public static final String GOOGLE_API_MODE_VALUE = "walking";
+    public static final String GOOGLE_API_INPUT = "input";
+    public static final String GOOGLE_API_LOCATION = "location";
+    public static final String GOOGLE_API_KEY = "key";
+    public static final String GOOGLE_APP_API_KEY = "GoogleMapPlace_API";
+    public static final String GOOGLE_API_RADIUS = "radius";
 
 
     public static final String JCD_URL = "https://api.jcdecaux.com/vls/v1/stations";

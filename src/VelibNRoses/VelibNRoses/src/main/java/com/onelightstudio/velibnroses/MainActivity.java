@@ -189,8 +189,8 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         arrivalLocationProgress = (ProgressBar) findViewById(R.id.arrival_mylocation_progress);
         arrivalStandsField = (EditText) findViewById(R.id.arrival_stands);
 
-        departureField.setAdapter(new AddressAdapter(this, departureField.getId()));
-        arrivalField.setAdapter(new AddressAdapter(this, arrivalField.getId()));
+        departureField.setAdapter(new AddressAdapter(this, R.layout.list_item));
+        arrivalField.setAdapter(new AddressAdapter(this, R.layout.list_item));
 
         departureBikesField.addTextChangedListener(new TextWatcher() {
             @Override
@@ -596,17 +596,19 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         while (matchingStationNumber < Constants.SEARCH_RESULT_MAX_STATIONS_NUMBER && radius <= Constants.STATION_SEARCH_MAX_RADIUS_IN_METERS) {
             Map<Station, Long> distanceStations = new HashMap<Station, Long>();
             // find all stations distance for a radius
-            for (Station station : stations) {
-                if (!Double.isNaN(station.lat) && !Double.isNaN(station.lng)) {
-                    Long distance = Long.valueOf(MainActivity.this.getDistanceInMeters(location, station.latLng));
-                    if (!distanceStations.containsKey(station) && distance.longValue() <= radius) {
-                        if (fieldId == FIELD_DEPARTURE) {
-                            if (station.availableBikes >= bikesNumber) {
-                                distanceStations.put(station, distance);
-                            }
-                        } else {
-                            if (station.availableBikeStands >= bikesNumber) {
-                                distanceStations.put(station, distance);
+            if(stations != null){
+                for (Station station : stations) {
+                    if (!Double.isNaN(station.lat) && !Double.isNaN(station.lng)) {
+                        Long distance = Long.valueOf(MainActivity.this.getDistanceInMeters(location, station.latLng));
+                        if (!distanceStations.containsKey(station) && distance.longValue() <= radius) {
+                            if (fieldId == FIELD_DEPARTURE) {
+                                if (station.availableBikes >= bikesNumber) {
+                                    distanceStations.put(station, distance);
+                                }
+                            } else {
+                                if (station.availableBikeStands >= bikesNumber) {
+                                    distanceStations.put(station, distance);
+                                }
                             }
                         }
                     }
@@ -702,4 +704,13 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return (long) (Constants.EARTH_RADIUS * c);
     }
+
+    public LocationClient getLocationClient() {
+        return locationClient;
+    }
+
+    public void setLocationClient(LocationClient locationClient) {
+        this.locationClient = locationClient;
+    }
+
 }
