@@ -9,6 +9,7 @@ import android.os.Message;
 import android.support.v4.app.FragmentActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -219,6 +220,69 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 if(departureField.getAdapter() == null) {
                     departureField.setAdapter(new AddressAdapter(MainActivity.this, R.layout.list_item));
                 }
+            }
+        });
+
+        departureField.setOnKeyListener(new View.OnKeyListener() {
+
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                // If the event is a key-down event on the "enter" button
+                if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
+                        (keyCode == KeyEvent.KEYCODE_ENTER))
+                {
+                    // Perform action on Enter key press
+                    departureField.clearFocus();
+                    arrivalField.requestFocus();
+                    return true;
+                }
+                return false;
+            }
+        });
+
+
+        departureBikesField.setOnKeyListener(new View.OnKeyListener() {
+
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                // If the event is a key-down event on the "enter" button
+                if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
+                        (keyCode == KeyEvent.KEYCODE_ENTER))
+                {
+                    // Perform action on Enter key press
+                    departureBikesField.clearFocus();
+                    arrivalStandsField.requestFocus();
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        arrivalField.setOnKeyListener(new View.OnKeyListener() {
+
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                // If the event is a key-down event on the "enter" button
+                if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
+                        (keyCode == KeyEvent.KEYCODE_ENTER))
+                {
+                    // Perform action on Enter key press
+                    startSearch();
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        arrivalStandsField.setOnKeyListener(new View.OnKeyListener() {
+
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                // If the event is a key-down event on the "enter" button
+                if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
+                        (keyCode == KeyEvent.KEYCODE_ENTER))
+                {
+                    // Perform action on Enter key press
+                    startSearch();
+                    return true;
+                }
+                return false;
             }
         });
 
