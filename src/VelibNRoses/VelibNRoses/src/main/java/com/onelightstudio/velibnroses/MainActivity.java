@@ -158,6 +158,8 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private Polyline searchMapPolyline;
     private MenuItem actionSearchMenuItem;
     private MenuItem actionClearSearchMenuItem;
+    private Marker departureMarker;
+    private Marker arrivalMarker;
 
     // ACTIVITY LIFECYCLE
 
@@ -387,9 +389,9 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 map.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
                     @Override
                     public void onCameraChange(CameraPosition cameraPosition) {
-                    if (stations != null) {
-                        displayStations();
-                    }
+                        if (stations != null) {
+                            displayStations();
+                        }
                     }
                 });
                 map.setMyLocationEnabled(true);
@@ -399,28 +401,31 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 map.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
                     @Override
                     public boolean onMarkerClick(Marker marker) {
-                    if (searchMode) {
-                        for(Station station : searchMapDepartureStations) {
-                            if (station.searchMarker.equals(marker)) {
-                                searchMapDepartureStation = station;
-                                break;
+                        if (marker.equals(departureMarker) || marker.equals(arrivalMarker)) {
+                            return false;
+                        }
+                        if (searchMode) {
+                            for (Station station : searchMapDepartureStations) {
+                                if (station.searchMarker.equals(marker)) {
+                                    searchMapDepartureStation = station;
+                                    break;
+                                }
+                            }
+                            for (Station station : searchMapArrivalStations) {
+                                if (station.searchMarker.equals(marker)) {
+                                    searchMapArrivalStation = station;
+                                    break;
+                                }
+                            }
+                            displaySearchResult();
+                        } else {
+                            LatLngBounds bounds = clusterBounds.get(marker);
+                            if (bounds != null) {
+                                map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, getResources().getDimensionPixelSize(R.dimen.padding_zoom_cluster)));
                             }
                         }
-                        for(Station station : searchMapArrivalStations) {
-                            if (station.searchMarker.equals(marker)) {
-                                searchMapArrivalStation = station;
-                                break;
-                            }
-                        }
-                        displaySearchResult();
-                    } else {
-                        LatLngBounds bounds = clusterBounds.get(marker);
-                        if (bounds != null) {
-                            map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, getResources().getDimensionPixelSize(R.dimen.padding_zoom_cluster)));
-                        }
-                    }
 
-                    return true;
+                        return true;
                     }
                 });
             } else {
@@ -607,7 +612,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             Toast.makeText(this, R.string.departure_unavailable, Toast.LENGTH_LONG).show();
         } else if (arrivalField.getText().toString().trim().length() == 0) {
             Toast.makeText(this, R.string.arrival_unavailable, Toast.LENGTH_LONG).show();
-        } else if(stations == null) {
+        } else if (stations == null) {
             Toast.makeText(this, R.string.stations_not_available, Toast.LENGTH_LONG).show();
         } else {
             departureLocation = null;
@@ -702,29 +707,29 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             radiusDist = Constants.STATION_SEARCH_MIN_RADIUS_IN_METERS;
         }
 
-        Log.e(getDistanceInMeters(startLocation, finishLocation)+"");
-        Log.e(radiusDist+"");
+        Log.e(getDistanceInMeters(startLocation, finishLocation) + "");
+        Log.e(radiusDist + "");
 
         Map<Station, Long> distanceStations = new HashMap<Station, Long>();
         // find all stations distance for a radius
-            if(stations != null){
-        for (Station station : stations) {
-            if (!Double.isNaN(station.lat) && !Double.isNaN(station.lng)) {
-                Long distance = Long.valueOf(MainActivity.this.getDistanceInMeters(location, station.latLng));
-                if (distance.longValue() <= radiusDist) {
-                    if (fieldId == FIELD_DEPARTURE) {
-                        if (station.availableBikes >= bikesNumber) {
-                            distanceStations.put(station, distance);
-                        }
-                    } else {
-                        if (station.availableBikeStands >= bikesNumber) {
-                            distanceStations.put(station, distance);
+        if (stations != null) {
+            for (Station station : stations) {
+                if (!Double.isNaN(station.lat) && !Double.isNaN(station.lng)) {
+                    Long distance = Long.valueOf(MainActivity.this.getDistanceInMeters(location, station.latLng));
+                    if (distance.longValue() <= radiusDist) {
+                        if (fieldId == FIELD_DEPARTURE) {
+                            if (station.availableBikes >= bikesNumber) {
+                                distanceStations.put(station, distance);
+                            }
+                        } else {
+                            if (station.availableBikeStands >= bikesNumber) {
+                                distanceStations.put(station, distance);
+                            }
                         }
                     }
                 }
             }
         }
-            }
 
         // sort station by distance and get the first SEARCH_RESULT_MAX_STATIONS_NUMBER stations
         distanceStations = Util.sortMapByValues(distanceStations);
@@ -787,8 +792,8 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                     }
 
                     if (!searchMapMarkersAdded) {
-                        map.addMarker(new MarkerOptions().position(departureLocation).title(getString(R.string.departure)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_departure)));
-                        map.addMarker(new MarkerOptions().position(arrivalLocation).title(getString(R.string.arrival)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_arrival)));
+                        departureMarker = map.addMarker(new MarkerOptions().position(departureLocation).title(getString(R.string.departure)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_departure)));
+                        arrivalMarker = map.addMarker(new MarkerOptions().position(arrivalLocation).title(getString(R.string.arrival)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_arrival)));
                     }
                     searchMapMarkersAdded = true;
 
