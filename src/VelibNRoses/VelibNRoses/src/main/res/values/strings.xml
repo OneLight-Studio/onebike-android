@@ -14,8 +14,11 @@
     <string name="stands_number">NB Stands</string>
     <string name="bikes_number">NB Bikes</string>
     <string name="search">Search</string>
+    <string name="close_search">Close the current search</string>
 
     <string name="departure_unavailable">You must fill the departure</string>
     <string name="arrival_unavailable">You must fill the arrival</string>
+    <string name="stations_not_available">Stations not already loaded, retry in seconds</string>
+    <string name="path_impossible">Impossible to show you a route for these address</string>
 
 </resources>

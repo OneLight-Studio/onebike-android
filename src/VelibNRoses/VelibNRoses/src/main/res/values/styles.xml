@@ -2,6 +2,7 @@
 
     <style name="Theme.OneBike" parent="android:Theme.Holo.Light">
         <item name="android:actionBarStyle">@style/Theme.OneBike.ActionBar</item>
+        <item name="android:autoCompleteTextViewStyle">@style/Theme.OneBike.SearchView.AutoCompleteTextView</item>
         <item name="android:editTextStyle">@style/Theme.OneBike.SearchView.EditText</item>
         <item name="android:buttonStyle">@style/Theme.OneBike.SearchView.Button</item>
         <item name="android:actionButtonStyle">@style/Theme.OneBike.ActionButton</item>
@@ -23,8 +24,17 @@
 
     <style name="Theme.OneBike.SearchView" parent="@style/Theme.OneBike">
         <item name="android:background">@android:color/black</item>
+        <item name="android:paddingRight">12dp</item>
+        <item name="android:paddingLeft">12dp</item>
+        <item name="android:paddingTop">12dp</item>
+    </style>
+
+    <style name="Theme.OneBike.SearchView.AutoCompleteTextView" parent="android:Widget.Holo.AutoCompleteTextView">
+        <item name="android:background">@android:color/white</item>
+        <item name="android:height">48dp</item>
         <item name="android:padding">12dp</item>
     </style>
+
 
     <style name="Theme.OneBike.SearchView.EditText" parent="android:Widget.Holo.EditText">
         <item name="android:background">@android:color/white</item>

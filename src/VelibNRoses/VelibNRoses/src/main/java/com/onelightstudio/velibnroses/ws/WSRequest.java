@@ -1,7 +1,10 @@
 package com.onelightstudio.velibnroses.ws;
 
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -28,7 +31,8 @@ import org.json.JSONObject;
 
 import android.content.Context;
 import android.os.AsyncTask;
-import android.util.Log;
+
+import com.onelightstudio.velibnroses.Log;
 
 public class WSRequest extends AsyncTask<Void, Void, JSONObject> {
 
@@ -75,8 +79,15 @@ public class WSRequest extends AsyncTask<Void, Void, JSONObject> {
      */
     @Override
     protected JSONObject doInBackground(Void... nothing) {
+        return wsRequestGet();
+    }
+
+    public JSONObject wsRequestGet() {
         JSONObject result = null;
         String uri = getURI();
+
+        Log.d("URI: " + uri);
+
         if (uri != null) {
             try {
                 HttpParams httpParams = new BasicHttpParams();
@@ -124,6 +135,50 @@ public class WSRequest extends AsyncTask<Void, Void, JSONObject> {
         return result;
     }
 
+
+    public JSONObject wsRequestGetSimple() {
+        JSONObject result = null;
+        String uri = getURI();
+        HttpURLConnection conn = null;
+        StringBuilder jsonResults = new StringBuilder();
+        String resultStr = new String();
+
+        Log.d("URI: " + uri);
+
+        if (uri != null) {
+            try {
+                URL url = new URL(uri);
+                conn = (HttpURLConnection) url.openConnection();
+                InputStreamReader in = new InputStreamReader(conn.getInputStream());
+
+                // Load the results into a StringBuilder
+                int read;
+                char[] buff = new char[1024];
+                while ((read = in.read(buff)) != -1) {
+                    jsonResults.append(buff, 0, read);
+                }
+
+                resultStr = jsonResults.toString();
+                if (resultStr != null && !"".equals(resultStr.trim())) {
+                    if (resultStr.startsWith("[")) {
+                        //The json is an Array
+                        result = new JSONObject();
+                        result.put("list", new JSONArray(resultStr));
+                    } else {
+                        result = new JSONObject(resultStr);
+                    }
+                }
+            } catch (Exception e) {
+                exception = e;
+            } finally {
+                if (conn != null) {
+                    conn.disconnect();
+                }
+            }
+        }
+        return result;
+    }
+
     protected String getURI() {
         StringBuilder uriBuilder = new StringBuilder(resource);
         if (!params.isEmpty()) {
@@ -155,7 +210,7 @@ public class WSRequest extends AsyncTask<Void, Void, JSONObject> {
     protected void onPostExecute(JSONObject result) {
         handler.doAfter(context);
         if (exception != null) {
-            Log.d("WS Request error", exception.toString());
+            Log.d("WS Request error", exception);
 
             if (exception instanceof HttpResponseException) {
                 handler.onError(context,

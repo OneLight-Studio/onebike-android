@@ -35,12 +35,12 @@ public class StationMarker {
     }
 
     public static MarkerOptions createMarker(Context ctx, Station station) {
-        if (station.marker == null) {
+        if (station.markerOptions == null) {
             Bitmap bmp = createBitmap(ctx, station);
-            station.marker = new MarkerOptions().position(station.latLng).title(station.name).icon(BitmapDescriptorFactory.fromBitmap(bmp)).anchor(MARKER_ANCHOR_U, MARKER_ANCHOR_V);
+            station.markerOptions = new MarkerOptions().position(station.latLng).title(station.name).icon(BitmapDescriptorFactory.fromBitmap(bmp)).anchor(MARKER_ANCHOR_U, MARKER_ANCHOR_V);
             bmp.recycle();
         }
-        return station.marker;
+        return station.markerOptions;
     }
 
     private static Bitmap createBitmap(Context ctx, Station station) {
