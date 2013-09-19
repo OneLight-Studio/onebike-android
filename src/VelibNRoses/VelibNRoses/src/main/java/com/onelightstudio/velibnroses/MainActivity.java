@@ -137,6 +137,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private HashMap<Marker, LatLngBounds> clusterBounds;
     private boolean searchMode;
 
+    private int loadStationCount = 0;
     private View searchView;
     private View mapView;
     private boolean searchViewVisible;
@@ -160,6 +161,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private MenuItem actionClearSearchMenuItem;
     private Marker departureMarker;
     private Marker arrivalMarker;
+    private AsyncTask<Void, Void, HashMap<MarkerOptions, LatLngBounds>> displayStationTask;
 
     // ACTIVITY LIFECYCLE
 
@@ -501,7 +503,9 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
     private void loadStations() {
 
-        Log.d("loadStations " + loadingStations );
+        loadStationCount ++;
+
+        Log.d("loadStations " + loadingStations + " retry: " + loadStationCount);
         if (!loadingStations) {
             loadingStations = true;
             Log.d("Call stations WS");
@@ -519,6 +523,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 request.handleWith(new WSSilentHandler() {
                     @Override
                     public void onResult(Context context, JSONObject result) {
+                        loadStationCount = 0;
                         parseJSONResult(result, executeInBackground);
                     }
 
@@ -526,31 +531,52 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                     public void onException(Context context, Exception e) {
                         super.onException(context, e);
                         loadingStations = false;
+                        if(loadStationCount < 3){
+                            loadStations();
+                        } else {
+                            loadStationCount = 0;
+                        }
                     }
 
                     @Override
                     public void onError(Context context, int errorCode) {
                         super.onError(context, errorCode);
                         loadingStations = false;
+                        if(loadStationCount < 3){
+                            loadStations();
+                        } else {
+                            loadStationCount = 0;
+                        }
                     }
                 });
             } else {
                 request.handleWith(new WSDefaultHandler() {
                     @Override
                     public void onResult(Context context, JSONObject result) {
+                        loadStationCount = 0;
                         parseJSONResult(result, executeInBackground);
                     }
 
                     @Override
                     public void onException(Context context, Exception e) {
-                        super.onException(context, e);
                         loadingStations = false;
+                        if(loadStationCount < 3){
+                            loadStations();
+                        } else {
+                            super.onException(context, e);
+                            loadStationCount = 0;
+                        }
                     }
 
                     @Override
                     public void onError(Context context, int errorCode) {
-                        super.onError(context, errorCode);
                         loadingStations = false;
+                        if(loadStationCount < 3){
+                            loadStations();
+                        } else {
+                            super.onError(context, errorCode);
+                            loadStationCount = 0;
+                        }
                     }
                 });
             }
@@ -608,7 +634,13 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
     private void displayStations() {
         if (!searchMode) {
-            new AsyncTask<Void, Void, HashMap<MarkerOptions, LatLngBounds>>() {
+
+            if(displayStationTask != null && displayStationTask.getStatus() != AsyncTask.Status.FINISHED){
+                Log.d("Cancel previous displayStationTask");
+                displayStationTask.cancel(true);
+            }
+
+            displayStationTask = new AsyncTask<Void, Void, HashMap<MarkerOptions, LatLngBounds>>() {
 
                 private LatLngBounds bounds;
                 private float zoomLevel;
