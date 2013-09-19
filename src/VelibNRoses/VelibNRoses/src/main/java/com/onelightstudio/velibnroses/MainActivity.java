@@ -1,6 +1,7 @@
 package com.onelightstudio.velibnroses;
 
 import android.content.Context;
+import android.content.Intent;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -406,6 +407,9 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         switch (item.getItemId()) {
             case R.id.action_search:
                 toggleSearchViewVisible();
+                return true;
+            case R.id.action_info:
+                startActivity(new Intent(this, InfoActivity.class));
                 return true;
             case R.id.action_clear_search:
                 clearSearch();
