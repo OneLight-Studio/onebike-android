@@ -162,6 +162,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private MenuItem actionClearSearchMenuItem;
     private Marker departureMarker;
     private Marker arrivalMarker;
+    private ArrayList<Marker> defaultMapStations;
 
     // ACTIVITY LIFECYCLE
 
@@ -322,6 +323,9 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 arrivalStandsField.setText(editable.toString());
             }
         });
+
+        //Default map markers
+        defaultMapStations = new ArrayList<Marker>();
 
         //Station request
         loadingStations = false;
@@ -616,13 +620,22 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 }
 
                 protected void onPostExecute(HashMap<MarkerOptions, LatLngBounds> markers) {
-                    clearMap();
+                    ArrayList<Marker> tmpAddedMarkers = new ArrayList<Marker>();
+
                     for (Map.Entry<MarkerOptions, LatLngBounds> markerEntry : markers.entrySet()) {
                         Marker marker = map.addMarker(markerEntry.getKey());
+                        tmpAddedMarkers.add(marker);
+
                         if (markerEntry.getValue() != null) {
                             clusterBounds.put(marker, markerEntry.getValue());
                         }
                     }
+
+                    for(Marker stationMarker : defaultMapStations) {
+                        stationMarker.remove();
+                    }
+
+                    defaultMapStations = tmpAddedMarkers;
                 }
             }.execute();
         }
@@ -631,6 +644,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private void clearMap() {
         if (map != null) {
             map.clear();
+            defaultMapStations.clear();
         }
     }
 
