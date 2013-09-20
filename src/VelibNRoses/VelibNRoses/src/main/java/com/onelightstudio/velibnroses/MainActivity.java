@@ -163,6 +163,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private Marker arrivalMarker;
     private AsyncTask<Void, Void, HashMap<MarkerOptions, LatLngBounds>> displayStationTask;
 
+
     // ACTIVITY LIFECYCLE
 
     @Override
@@ -484,14 +485,16 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                                 }
                             }
                             displaySearchResult();
+                            return true;
                         } else {
                             LatLngBounds bounds = clusterBounds.get(marker);
                             if (bounds != null) {
                                 map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, getResources().getDimensionPixelSize(R.dimen.padding_zoom_cluster)));
+                                return true;
                             }
                         }
 
-                        return true;
+                        return false;
                     }
                 });
             } else {
@@ -712,14 +715,27 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 for (Station updatedStation : stations ){
                     for (Station station : searchMapDepartureStations) {
                         if (station.lng == updatedStation.lng && station.lat == updatedStation.lat ) {
-                            searchMapDepartureStations.set(searchMapDepartureStations.indexOf(station), updatedStation);
-                            break;
+                            // If there is not enough bikes, do not display it anymore
+                            if (updatedStation.availableBikes < Integer.valueOf(departureBikesField.getText().toString())) {
+                                findAndDisplaySearchStations();
+                                return;
+                            } else {
+                                searchMapDepartureStations.set(searchMapDepartureStations.indexOf(station), updatedStation);
+                                break;
+                            }
                         }
                     }
                     for (Station station : searchMapArrivalStations) {
                         if (station.lng == updatedStation.lng && station.lat == updatedStation.lat ) {
-                            searchMapArrivalStations.set(searchMapArrivalStations.indexOf(station), updatedStation);
-                            break;
+                            // If there is not enough stands, do not display it anymore
+                            if (updatedStation.availableBikeStands < Integer.valueOf(arrivalStandsField.getText().toString())) {
+                                findAndDisplaySearchStations();
+                                return;
+                            } else {
+                                searchMapArrivalStations.set(searchMapArrivalStations.indexOf(station), updatedStation);
+                                break;
+                            }
+
                         }
                     }
                 }
@@ -839,6 +855,30 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         }
     }
 
+    /**
+     * Find the stations near departure and arrival locations, and display them
+     */
+    private void findAndDisplaySearchStations() {
+        searchMapDepartureStations = searchStationsNearLocation(departureLocation, arrivalLocation, Integer.valueOf(departureBikesField.getText().toString()), FIELD_DEPARTURE);
+        searchMapArrivalStations = searchStationsNearLocation(departureLocation, arrivalLocation, Integer.valueOf(arrivalStandsField.getText().toString()), FIELD_ARRIVAL);
+        if (map != null && searchMapDepartureStations.size() > 0 && searchMapArrivalStations.size() > 0) {
+
+            searchMode = true;
+            actionClearSearchMenuItem.setVisible(true);
+
+            clearMap();
+
+            searchMapDepartureStation = searchMapDepartureStations.get(0);
+            searchMapArrivalStation = searchMapArrivalStations.get(0);
+
+            displaySearchResult();
+
+
+        } else {
+            Toast.makeText(MainActivity.this, R.string.path_impossible, Toast.LENGTH_LONG).show();
+        }
+    }
+
     private void searchStationsNearAddress(String address, final int fieldId) {
         WSRequest request = new WSRequest(MainActivity.this, Constants.GOOGLE_API_GEOCODE_URL);
         request.withParam(Constants.GOOGLE_API_ADDRESS, address);
@@ -861,24 +901,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                                 arrivalLocation = new LatLng(lat, lng);
                             }
                             if (departureLocation != null && arrivalLocation != null) {
-                                searchMapDepartureStations = searchStationsNearLocation(departureLocation, arrivalLocation, Integer.valueOf(departureBikesField.getText().toString()), FIELD_DEPARTURE);
-                                searchMapArrivalStations = searchStationsNearLocation(departureLocation, arrivalLocation, Integer.valueOf(arrivalStandsField.getText().toString()), FIELD_ARRIVAL);
-                                if (map != null && searchMapDepartureStations.size() > 0 && searchMapArrivalStations.size() > 0) {
-
-                                    searchMode = true;
-                                    actionClearSearchMenuItem.setVisible(true);
-
-                                    clearMap();
-
-                                    searchMapDepartureStation = searchMapDepartureStations.get(0);
-                                    searchMapArrivalStation = searchMapArrivalStations.get(0);
-
-                                    displaySearchResult();
-
-
-                                } else {
-                                    Toast.makeText(MainActivity.this, R.string.path_impossible, Toast.LENGTH_LONG).show();
-                                }
+                                findAndDisplaySearchStations();
                             }
                         } else {
                             if (fieldId == FIELD_DEPARTURE) {
