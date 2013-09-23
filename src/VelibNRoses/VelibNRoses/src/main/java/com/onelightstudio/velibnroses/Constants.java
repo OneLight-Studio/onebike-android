@@ -5,15 +5,17 @@ public interface Constants {
 
     public static final double MAP_DEFAULT_LAT = 43.610477;
     public static final double MAP_DEFAULT_LNG = 1.443615;
-    public static final int MAP_DEFAULT_ZOOM = 12;
-    public static final int MAP_DEFAULT_USER_ZOOM = 15;
+    public static final int MAP_DEFAULT_ZOOM = 16;
+    public static final int MAP_DEFAULT_USER_ZOOM = 16;
     public static final int MAP_ANIMATE_TIME = 500;
     public static final int MAP_TIMER_REFRESH_IN_MILLISECONDES = 300000;
 
-    public static final int STATION_SEARCH_RADIUS_IN_METERS = 50;
     public static final int SEARCH_RESULT_MAX_STATIONS_NUMBER = 3;
     public static final int STATION_SEARCH_MAX_RADIUS_IN_METERS = 5000;
     public static final int STATION_SEARCH_MIN_RADIUS_IN_METERS = 500;
+
+    public static final double TLS_LAT = 43.610477;
+    public static final double TLS_LNG = 1.443615;
 
     public static final String GOOGLE_API_GEOCODE_URL = "http://maps.google.com/maps/api/geocode/json";
     public static final String GOOGLE_API_DIRECTIONS_URL = "http://maps.google.com/maps/api/directions/json";
