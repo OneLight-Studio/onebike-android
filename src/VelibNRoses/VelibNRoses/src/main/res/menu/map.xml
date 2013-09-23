@@ -1,11 +1,18 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/action_search"
-          android:icon="@drawable/ic_menu_search"
-          android:title="@string/search"
-          android:showAsAction="always" />
-    <item android:id="@+id/action_clear_search"
-          android:icon="@drawable/ic_close_search"
-          android:title="@string/close_search"
-          android:showAsAction="always"
-          android:visible="false"/>
+    <item
+        android:id="@+id/action_clear_search"
+        android:icon="@drawable/ic_close_search"
+        android:title="@string/close_search"
+        android:showAsAction="always"
+        android:visible="false" />
+    <item
+        android:id="@+id/action_search"
+        android:icon="@drawable/ic_menu_search"
+        android:title="@string/search"
+        android:showAsAction="always" />
+    <item
+        android:id="@+id/action_info"
+        android:icon="@drawable/ic_menu_info"
+        android:title="@string/info"
+        android:showAsAction="always" />
 </menu>

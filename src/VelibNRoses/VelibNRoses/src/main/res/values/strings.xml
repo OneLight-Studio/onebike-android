@@ -20,5 +20,6 @@
     <string name="arrival_unavailable">You must fill the arrival</string>
     <string name="stations_not_available">Stations not already loaded, retry in seconds</string>
     <string name="path_impossible">Impossible to show you a route for these address</string>
+    <string name="info">Info</string>
 
 </resources>

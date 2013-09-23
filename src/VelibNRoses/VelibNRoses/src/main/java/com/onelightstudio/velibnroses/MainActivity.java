@@ -1,6 +1,7 @@
 package com.onelightstudio.velibnroses;
 
 import android.content.Context;
+import android.content.Intent;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -118,7 +119,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         protected void onPreExecute() {
             locationButton.setVisibility(View.GONE);
             locationProgress.setVisibility(View.VISIBLE);
-            field.setAdapter((ArrayAdapter<String>)null);
+            field.setAdapter((ArrayAdapter<String>) null);
         }
     }
 
@@ -161,8 +162,8 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private MenuItem actionClearSearchMenuItem;
     private Marker departureMarker;
     private Marker arrivalMarker;
-    private AsyncTask<Void, Void, HashMap<MarkerOptions, LatLngBounds>> displayStationTask;
-
+    private AsyncTask displayStationTask;
+    private ArrayList<Marker> defaultMapStations;
 
     // ACTIVITY LIFECYCLE
 
@@ -221,7 +222,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
             @Override
             public void afterTextChanged(Editable editable) {
-                if(departureField.getAdapter() == null) {
+                if (departureField.getAdapter() == null) {
                     departureField.setAdapter(new AddressAdapter(MainActivity.this, R.layout.list_item));
                 }
             }
@@ -232,8 +233,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             public boolean onKey(View v, int keyCode, KeyEvent event) {
                 // If the event is a key-down event on the "enter" button
                 if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
-                        (keyCode == KeyEvent.KEYCODE_ENTER))
-                {
+                        (keyCode == KeyEvent.KEYCODE_ENTER)) {
                     // Perform action on Enter key press
                     departureField.clearFocus();
                     arrivalField.requestFocus();
@@ -249,8 +249,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             public boolean onKey(View v, int keyCode, KeyEvent event) {
                 // If the event is a key-down event on the "enter" button
                 if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
-                        (keyCode == KeyEvent.KEYCODE_ENTER))
-                {
+                        (keyCode == KeyEvent.KEYCODE_ENTER)) {
                     // Perform action on Enter key press
                     departureBikesField.clearFocus();
                     arrivalStandsField.requestFocus();
@@ -265,8 +264,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             public boolean onKey(View v, int keyCode, KeyEvent event) {
                 // If the event is a key-down event on the "enter" button
                 if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
-                        (keyCode == KeyEvent.KEYCODE_ENTER))
-                {
+                        (keyCode == KeyEvent.KEYCODE_ENTER)) {
                     // Perform action on Enter key press
                     startSearch();
                     return true;
@@ -280,8 +278,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             public boolean onKey(View v, int keyCode, KeyEvent event) {
                 // If the event is a key-down event on the "enter" button
                 if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
-                        (keyCode == KeyEvent.KEYCODE_ENTER))
-                {
+                        (keyCode == KeyEvent.KEYCODE_ENTER)) {
                     // Perform action on Enter key press
                     startSearch();
                     return true;
@@ -303,7 +300,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
             @Override
             public void afterTextChanged(Editable editable) {
-                if(arrivalField.getAdapter() == null) {
+                if (arrivalField.getAdapter() == null) {
                     arrivalField.setAdapter(new AddressAdapter(MainActivity.this, R.layout.list_item));
                 }
             }
@@ -325,6 +322,9 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 arrivalStandsField.setText(editable.toString());
             }
         });
+
+        //Default map markers
+        defaultMapStations = new ArrayList<Marker>();
 
         //Station request
         loadingStations = false;
@@ -412,6 +412,9 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             case R.id.action_search:
                 toggleSearchViewVisible();
                 return true;
+            case R.id.action_info:
+                startActivity(new Intent(this, InfoActivity.class));
+                return true;
             case R.id.action_clear_search:
                 clearSearch();
                 return true;
@@ -458,7 +461,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 map.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
                     @Override
                     public void onCameraChange(CameraPosition cameraPosition) {
-                           displayStations();
+                        displayStations();
                     }
                 });
                 map.setMyLocationEnabled(true);
@@ -506,7 +509,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
     private void loadStations() {
 
-        loadStationCount ++;
+        loadStationCount++;
 
         Log.d("loadStations " + loadingStations + " retry: " + loadStationCount);
         if (!loadingStations) {
@@ -516,7 +519,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             request.withParam(Constants.JCD_API_KEY, ((App) getApplication()).getApiKey(Constants.JCD_APP_API_KEY));
 
             boolean tmp = true;
-            synchronized (stations){
+            synchronized (stations) {
                 tmp = !stations.isEmpty();
             }
 
@@ -534,7 +537,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                     public void onException(Context context, Exception e) {
                         super.onException(context, e);
                         loadingStations = false;
-                        if(loadStationCount < 3){
+                        if (loadStationCount < 3) {
                             loadStations();
                         } else {
                             loadStationCount = 0;
@@ -545,7 +548,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                     public void onError(Context context, int errorCode) {
                         super.onError(context, errorCode);
                         loadingStations = false;
-                        if(loadStationCount < 3){
+                        if (loadStationCount < 3) {
                             loadStations();
                         } else {
                             loadStationCount = 0;
@@ -563,7 +566,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                     @Override
                     public void onException(Context context, Exception e) {
                         loadingStations = false;
-                        if(loadStationCount < 3){
+                        if (loadStationCount < 3) {
                             loadStations();
                         } else {
                             super.onException(context, e);
@@ -574,7 +577,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                     @Override
                     public void onError(Context context, int errorCode) {
                         loadingStations = false;
-                        if(loadStationCount < 3){
+                        if (loadStationCount < 3) {
                             loadStations();
                         } else {
                             super.onError(context, errorCode);
@@ -591,7 +594,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         new AsyncTask<Void, Void, Void>() {
             @Override
             protected synchronized Void doInBackground(Void... voids) {
-                if(result != null) {
+                if (result != null) {
                     JSONArray stationsJSON = (JSONArray) result.opt("list");
                     Log.i("Stations received : " + stationsJSON.length() + " stations");
                     synchronized (stations) {
@@ -638,7 +641,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private void displayStations() {
         if (!searchMode) {
 
-            if(displayStationTask != null && displayStationTask.getStatus() != AsyncTask.Status.FINISHED){
+            if (displayStationTask != null && displayStationTask.getStatus() != AsyncTask.Status.FINISHED) {
                 Log.d("Cancel previous displayStationTask");
                 displayStationTask.cancel(true);
             }
@@ -698,23 +701,32 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 }
 
                 protected void onPostExecute(HashMap<MarkerOptions, LatLngBounds> markers) {
-                    clearMap();
+                    ArrayList<Marker> tmpAddedMarkers = new ArrayList<Marker>();
+
                     for (Map.Entry<MarkerOptions, LatLngBounds> markerEntry : markers.entrySet()) {
                         Marker marker = map.addMarker(markerEntry.getKey());
+                        tmpAddedMarkers.add(marker);
+
                         if (markerEntry.getValue() != null) {
                             clusterBounds.put(marker, markerEntry.getValue());
                         }
                     }
+
+                    for (Marker stationMarker : defaultMapStations) {
+                        stationMarker.remove();
+                    }
+
+                    defaultMapStations = tmpAddedMarkers;
                 }
             }.execute();
         } else {
 
-            Log.d("Mise a jour des markers");
+            Log.d("Update the displayed markers");
 
             synchronized (stations) {
-                for (Station updatedStation : stations ){
+                for (Station updatedStation : stations) {
                     for (Station station : searchMapDepartureStations) {
-                        if (station.lng == updatedStation.lng && station.lat == updatedStation.lat ) {
+                        if (station.lng == updatedStation.lng && station.lat == updatedStation.lat) {
                             // If there is not enough bikes, do not display it anymore
                             if (updatedStation.availableBikes < Integer.valueOf(departureBikesField.getText().toString())) {
                                 findAndDisplaySearchStations();
@@ -726,7 +738,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                         }
                     }
                     for (Station station : searchMapArrivalStations) {
-                        if (station.lng == updatedStation.lng && station.lat == updatedStation.lat ) {
+                        if (station.lng == updatedStation.lng && station.lat == updatedStation.lat) {
                             // If there is not enough stands, do not display it anymore
                             if (updatedStation.availableBikeStands < Integer.valueOf(arrivalStandsField.getText().toString())) {
                                 findAndDisplaySearchStations();
@@ -760,7 +772,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 arrivalMarker = map.addMarker(new MarkerOptions().position(arrivalLocation).title(getString(R.string.arrival)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_arrival)));
             }
 
-            if(searchMapPolyline != null){
+            if (searchMapPolyline != null) {
                 PolylineOptions options = new PolylineOptions().addAll(searchMapPolyline.getPoints()).width(getResources().getDimensionPixelSize(R.dimen.polyline_width)).color(getResources().getColor(R.color.green)).geodesic(true);
                 if (searchMapPolyline != null) {
                     searchMapPolyline.remove();
@@ -777,6 +789,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private void clearMap() {
         if (map != null) {
             map.clear();
+            defaultMapStations.clear();
         }
     }
 
@@ -803,7 +816,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         searchViewVisible = false;
         this.actionSearchMenuItem.setVisible(true);
 
-        if(searchMode) {
+        if (searchMode) {
             this.actionClearSearchMenuItem.setVisible(true);
         }
 
@@ -837,7 +850,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             }
         }
 
-        if(makeSearch) {
+        if (makeSearch) {
             departureLocation = null;
             arrivalLocation = null;
             searchMapDepartureStation = null;
