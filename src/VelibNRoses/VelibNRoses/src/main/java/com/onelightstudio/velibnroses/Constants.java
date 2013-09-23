@@ -3,8 +3,6 @@ package com.onelightstudio.velibnroses;
 public interface Constants {
     public static final Integer EARTH_RADIUS = 6371000;
 
-    public static final double MAP_DEFAULT_LAT = 43.610477;
-    public static final double MAP_DEFAULT_LNG = 1.443615;
     public static final int MAP_DEFAULT_ZOOM = 16;
     public static final int MAP_DEFAULT_USER_ZOOM = 16;
     public static final int MAP_ANIMATE_TIME = 500;

@@ -379,15 +379,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
     @Override
     public void onConnected(Bundle bundle) {
-        if (forceCameraPosition == true && map != null) {
-            Location userLocation = locationClient.getLastLocation();
-            if (userLocation != null) {
-                map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(userLocation.getLatitude(), userLocation.getLongitude()), Constants.MAP_DEFAULT_USER_ZOOM), Constants.MAP_ANIMATE_TIME, null);
-            } else {
-                map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Constants.TLS_LAT, Constants.TLS_LNG), Constants.MAP_DEFAULT_USER_ZOOM), Constants.MAP_ANIMATE_TIME, null);
-                Toast.makeText(this, R.string.location_not_shared, Toast.LENGTH_LONG).show();
-            }
-        }
+        animateCameraOnMapUserLocEnable();
     }
 
     @Override
@@ -468,9 +460,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                     }
                 });
                 map.setMyLocationEnabled(true);
-                if (forceCameraPosition) {
-                    map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Double.valueOf(Constants.MAP_DEFAULT_LAT), Constants.MAP_DEFAULT_LNG), Constants.MAP_DEFAULT_ZOOM));
-                }
+                animateCameraOnMapUserLocEnable();
                 map.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
                     @Override
                     public boolean onMarkerClick(Marker marker) {
@@ -506,6 +496,22 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             } else {
                 //Tell the user to check its google play services
                 Toast.makeText(this, R.string.error_google_play_service, Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    private void animateCameraOnMapUserLocEnable() {
+        if (map != null && locationClient.isConnected()) {
+            if (forceCameraPosition == true) {
+                Location userLocation = locationClient.getLastLocation();
+                if (userLocation != null) {
+                    map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(userLocation.getLatitude(), userLocation.getLongitude()), Constants.MAP_DEFAULT_USER_ZOOM), Constants.MAP_ANIMATE_TIME, null);
+                } else {
+                    map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Constants.TLS_LAT, Constants.TLS_LNG), Constants.MAP_DEFAULT_USER_ZOOM), Constants.MAP_ANIMATE_TIME, null);
+                    if (Util.isOnline(this)) {
+                        Toast.makeText(this, R.string.location_not_shared, Toast.LENGTH_LONG).show();
+                    }
+                }
             }
         }
     }
