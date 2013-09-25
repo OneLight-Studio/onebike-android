@@ -52,6 +52,14 @@ public class WSRequest extends AsyncTask<Void, Void, JSONObject> {
             @Override
             public void onResult(Context context, JSONObject result) {
             }
+
+            @Override
+            public void onError(Context context, int errorCode) {
+            }
+
+            @Override
+            public void onException(Context context, Exception e) {
+            }
         };
     }
 

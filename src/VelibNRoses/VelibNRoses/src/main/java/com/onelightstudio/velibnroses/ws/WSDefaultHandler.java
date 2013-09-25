@@ -27,4 +27,8 @@ public abstract class WSDefaultHandler implements WSHandler {
             ((Activity) context).setProgressBarIndeterminateVisibility(true);
         }
     }
+
+    public abstract void onError(Context context, int errorCode);
+
+    public abstract void onException(Context context, Exception e);
 }
