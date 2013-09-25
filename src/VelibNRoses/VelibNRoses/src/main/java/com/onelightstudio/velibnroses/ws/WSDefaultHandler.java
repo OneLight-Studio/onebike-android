@@ -28,11 +28,7 @@ public abstract class WSDefaultHandler implements WSHandler {
         }
     }
 
-    public void onError(Context context, int errorCode) {
-        Toast.makeText(context, R.string.error, Toast.LENGTH_LONG).show();
-    }
+    public abstract void onError(Context context, int errorCode);
 
-    public void onException(Context context, Exception e) {
-        Toast.makeText(context, R.string.error, Toast.LENGTH_LONG).show();
-    }
+    public abstract void onException(Context context, Exception e);
 }
