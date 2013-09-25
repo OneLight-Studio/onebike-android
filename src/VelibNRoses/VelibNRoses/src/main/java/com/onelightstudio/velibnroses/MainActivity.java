@@ -507,7 +507,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 if (userLocation != null) {
                     map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(userLocation.getLatitude(), userLocation.getLongitude()), Constants.MAP_DEFAULT_USER_ZOOM), Constants.MAP_ANIMATE_TIME, null);
                 } else {
-                    map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Constants.TLS_LAT, Constants.TLS_LNG), Constants.MAP_DEFAULT_USER_ZOOM), Constants.MAP_ANIMATE_TIME, null);
+                    map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Constants.TLS_LAT, Constants.TLS_LNG), Constants.MAP_DEFAULT_NO_LOCATION_ZOOM), Constants.MAP_ANIMATE_TIME, null);
                     if (Util.isOnline(this)) {
                         Toast.makeText(this, R.string.location_not_shared, Toast.LENGTH_LONG).show();
                     }
@@ -915,6 +915,16 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         request.withParam(Constants.GOOGLE_API_SENSOR, "true");
         request.handleWith(new WSDefaultHandler() {
             @Override
+            public void onError(Context context, int errorCode) {
+                Toast.makeText(MainActivity.this, R.string.ws_google_search_route_fail, Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void onException(Context context, Exception e) {
+                Toast.makeText(MainActivity.this, R.string.ws_google_search_route_fail, Toast.LENGTH_LONG).show();
+            }
+
+            @Override
             public void onResult(Context context, JSONObject result) {
                 JSONArray addressLatLng = (JSONArray) result.opt("results");
                 if (addressLatLng != null && addressLatLng.length() > 0) {
@@ -1015,6 +1025,16 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         request.withParam(Constants.GOOGLE_API_MODE_KEY, Constants.GOOGLE_API_MODE_VALUE);
         request.withParam(Constants.GOOGLE_API_SENSOR, "true");
         request.handleWith(new WSDefaultHandler() {
+            @Override
+            public void onError(Context context, int errorCode) {
+                Toast.makeText(MainActivity.this, R.string.ws_google_search_route_fail, Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void onException(Context context, Exception e) {
+                Toast.makeText(MainActivity.this, R.string.ws_google_search_route_fail, Toast.LENGTH_LONG).show();
+            }
+
             @Override
             public void onResult(Context context, JSONObject result) {
                 if ("OK".equals(result.optString("status"))) {
