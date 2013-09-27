@@ -473,9 +473,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 map.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
                     @Override
                     public boolean onMarkerClick(Marker marker) {
-                        if (marker.equals(departureMarker) || marker.equals(arrivalMarker)) {
-                            return false;
-                        }
+
                         if (searchMode) {
                             for (Station station : searchMapDepartureStations) {
                                 if (station.searchMarker.equals(marker)) {
@@ -490,16 +488,16 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                                 }
                             }
                             displaySearchResult();
-                            return true;
                         } else {
                             LatLngBounds bounds = clusterBounds.get(marker);
                             if (bounds != null) {
                                 map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, getResources().getDimensionPixelSize(R.dimen.padding_zoom_cluster)));
-                                return true;
+                            } else {
+                                marker.showInfoWindow();
                             }
                         }
 
-                        return false;
+                        return true;
                     }
                 });
             } else {
