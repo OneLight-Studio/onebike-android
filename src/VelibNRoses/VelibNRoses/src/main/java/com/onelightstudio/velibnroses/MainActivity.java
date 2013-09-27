@@ -350,13 +350,15 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     protected void onPause() {
         super.onPause();
         pausedTime = System.currentTimeMillis();
+
+        // Remove any refresh task previously posted
+        timer.removeCallbacks(timeRunnable);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         if (pausedTime != null) {
-
             if ((System.currentTimeMillis() - pausedTime) > Constants.MAP_TIMER_REFRESH_IN_MILLISECONDES) {
                 //Too much time has passed, a refresh is needed
                 loadStations();
@@ -507,6 +509,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         }
     }
 
+    long t;
     private void loadStations() {
 
         loadStationCount++;
@@ -517,6 +520,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             Log.d("Call stations WS");
             WSRequest request = new WSRequest(this, Constants.JCD_URL);
             request.withParam(Constants.JCD_API_KEY, ((App) getApplication()).getApiKey(Constants.JCD_APP_API_KEY));
+            //request.withParam("contract", "Toulouse"); TODO
 
             boolean tmp = true;
             synchronized (stations) {
@@ -529,6 +533,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 request.handleWith(new WSSilentHandler() {
                     @Override
                     public void onResult(Context context, JSONObject result) {
+                        Log.d("Request result received (in BG): " + String.valueOf(System.currentTimeMillis() - t));
                         loadStationCount = 0;
                         parseJSONResult(result, executeInBackground);
                     }
@@ -559,6 +564,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 request.handleWith(new WSDefaultHandler() {
                     @Override
                     public void onResult(Context context, JSONObject result) {
+                        Log.d("Request result received: " + String.valueOf(System.currentTimeMillis() - t));
                         loadStationCount = 0;
                         parseJSONResult(result, executeInBackground);
                     }
@@ -586,6 +592,8 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                     }
                 });
             }
+            Log.d("Call request: " + System.currentTimeMillis());
+            t = System.currentTimeMillis();
             request.call();
         }
     }
@@ -605,6 +613,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                         }
                     }
                 }
+                Log.d("JSON parsed: " + String.valueOf(System.currentTimeMillis() - t));
                 return null;
             }
 
@@ -621,6 +630,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                     setProgressBarIndeterminateVisibility(false);
                 }
                 displayStations();
+                Log.d("Stations displayed: " + String.valueOf(System.currentTimeMillis() - t));
                 loadingStations = false;
             }
 

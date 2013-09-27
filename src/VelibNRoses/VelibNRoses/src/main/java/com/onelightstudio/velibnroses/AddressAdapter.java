@@ -115,7 +115,7 @@ class AddressAdapter extends ArrayAdapter<String> implements Filterable {
             request.withParam(Constants.GOOGLE_API_SENSOR, "false");
         }
 
-        JSONObject result = request.wsRequestGetSimple();
+        JSONObject result = request.wsRequestGet();
 
         JSONArray predictions = (JSONArray) result.opt("predictions");
         if (predictions != null && predictions.length() > 0) {

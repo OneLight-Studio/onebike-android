@@ -37,7 +37,13 @@ public class StationMarker {
     public static MarkerOptions createMarker(Context ctx, Station station) {
         if (station.markerOptions == null) {
             Bitmap bmp = createBitmap(ctx, station);
-            station.markerOptions = new MarkerOptions().position(station.latLng).title(station.name).icon(BitmapDescriptorFactory.fromBitmap(bmp)).anchor(MARKER_ANCHOR_U, MARKER_ANCHOR_V);
+            // Do not display the 'xxx - ' before the station name
+            int indexOfSeparator = station.name.indexOf(" - ");
+            String title = station.name;
+            if (indexOfSeparator > -1) {
+                title = station.name.substring(indexOfSeparator + 3);
+            }
+            station.markerOptions = new MarkerOptions().position(station.latLng).title(title).icon(BitmapDescriptorFactory.fromBitmap(bmp)).anchor(MARKER_ANCHOR_U, MARKER_ANCHOR_V);
             bmp.recycle();
         }
         return station.markerOptions;
