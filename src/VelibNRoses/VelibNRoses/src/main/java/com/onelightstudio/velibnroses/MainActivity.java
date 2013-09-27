@@ -381,12 +381,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
     @Override
     public void onConnected(Bundle bundle) {
-        if (forceCameraPosition == true) {
-            Location userLocation = locationClient.getLastLocation();
-            if (userLocation != null && map != null) {
-                map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(userLocation.getLatitude(), userLocation.getLongitude()), Constants.MAP_DEFAULT_USER_ZOOM), Constants.MAP_ANIMATE_TIME, null);
-            }
-        }
+        animateCameraOnMapUserLocEnable();
     }
 
     @Override
@@ -467,9 +462,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                     }
                 });
                 map.setMyLocationEnabled(true);
-                if (forceCameraPosition) {
-                    map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Double.valueOf(Constants.MAP_DEFAULT_LAT), Constants.MAP_DEFAULT_LNG), Constants.MAP_DEFAULT_ZOOM));
-                }
+                animateCameraOnMapUserLocEnable();
                 map.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
                     @Override
                     public boolean onMarkerClick(Marker marker) {
@@ -503,6 +496,22 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             } else {
                 //Tell the user to check its google play services
                 Toast.makeText(this, R.string.error_google_play_service, Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    private void animateCameraOnMapUserLocEnable() {
+        if (map != null && locationClient.isConnected()) {
+            if (forceCameraPosition == true) {
+                Location userLocation = locationClient.getLastLocation();
+                if (userLocation != null) {
+                    map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(userLocation.getLatitude(), userLocation.getLongitude()), Constants.MAP_DEFAULT_USER_ZOOM), Constants.MAP_ANIMATE_TIME, null);
+                } else {
+                    map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Constants.TLS_LAT, Constants.TLS_LNG), Constants.MAP_DEFAULT_NO_LOCATION_ZOOM), Constants.MAP_ANIMATE_TIME, null);
+                    if (Util.isOnline(this)) {
+                        Toast.makeText(this, R.string.location_not_shared, Toast.LENGTH_LONG).show();
+                    }
+                }
             }
         }
     }
@@ -573,7 +582,11 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                         if (loadStationCount < 3) {
                             loadStations();
                         } else {
-                            super.onException(context, e);
+                            if (!Util.isOnline(MainActivity.this)) {
+                                Toast.makeText(MainActivity.this, R.string.internet_not_available, Toast.LENGTH_LONG).show();
+                            } else {
+                                Toast.makeText(MainActivity.this, R.string.ws_stations_not_availabel, Toast.LENGTH_LONG).show();
+                            }
                             loadStationCount = 0;
                         }
                     }
@@ -584,7 +597,11 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                         if (loadStationCount < 3) {
                             loadStations();
                         } else {
-                            super.onError(context, errorCode);
+                            if (!Util.isOnline(MainActivity.this)) {
+                                Toast.makeText(MainActivity.this, R.string.internet_not_available, Toast.LENGTH_LONG).show();
+                            } else {
+                                Toast.makeText(MainActivity.this, R.string.ws_stations_not_availabel, Toast.LENGTH_LONG).show();
+                            }
                             loadStationCount = 0;
                         }
                     }
@@ -906,6 +923,16 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         request.withParam(Constants.GOOGLE_API_SENSOR, "true");
         request.handleWith(new WSDefaultHandler() {
             @Override
+            public void onError(Context context, int errorCode) {
+                Toast.makeText(MainActivity.this, R.string.ws_google_search_route_fail, Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void onException(Context context, Exception e) {
+                Toast.makeText(MainActivity.this, R.string.ws_google_search_route_fail, Toast.LENGTH_LONG).show();
+            }
+
+            @Override
             public void onResult(Context context, JSONObject result) {
                 JSONArray addressLatLng = (JSONArray) result.opt("results");
                 if (addressLatLng != null && addressLatLng.length() > 0) {
@@ -1007,6 +1034,16 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         request.withParam(Constants.GOOGLE_API_SENSOR, "true");
         request.handleWith(new WSDefaultHandler() {
             @Override
+            public void onError(Context context, int errorCode) {
+                Toast.makeText(MainActivity.this, R.string.ws_google_search_route_fail, Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void onException(Context context, Exception e) {
+                Toast.makeText(MainActivity.this, R.string.ws_google_search_route_fail, Toast.LENGTH_LONG).show();
+            }
+
+            @Override
             public void onResult(Context context, JSONObject result) {
                 if ("OK".equals(result.optString("status"))) {
                     JSONArray routeArray = result.optJSONArray("routes");
@@ -1054,7 +1091,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                     map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, getResources().getDimensionPixelSize(R.dimen.padding_zoom_search_result)));
 
                 } else {
-                    Toast.makeText(MainActivity.this, R.string.error, Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, R.string.ws_google_search_route_fail, Toast.LENGTH_LONG).show();
                 }
             }
         });
