@@ -9,15 +9,18 @@ import android.os.Handler;
 import android.support.v4.app.FragmentActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.GestureDetector;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
@@ -123,6 +126,35 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         }
     }
 
+    private class SearchPanelGestureListener extends GestureDetector.SimpleOnGestureListener {
+
+        private final int SWIPE_MIN_DISTANCE = 50;
+        private final int SWIPE_THRESHOLD_VELOCITY = 200;
+
+        @Override
+        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+            // Detect bottom to top gesture
+            if(e1.getY() - e2.getY() > SWIPE_MIN_DISTANCE && Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
+                hideSearchForm();
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public boolean onSingleTapUp(MotionEvent e) {
+            // Detect button click
+            hideSearchForm();
+            return true;
+        }
+
+        @Override
+        public boolean onDown(MotionEvent e) {
+            // Returns true to allow fling detection
+            return true;
+        }
+    }
+
     private static final int FIELD_DEPARTURE = 0;
     private static final int FIELD_ARRIVAL = 1;
     private final static String FORCE_CAMERA_POSITION = "ForceCameraPosition";
@@ -140,6 +172,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
     private int loadStationCount = 0;
     private View searchView;
+    private Button searchButton;
     private View mapView;
     private boolean searchViewVisible;
     private AutoCompleteTextView departureField;
@@ -160,8 +193,6 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private Polyline searchMapPolyline;
     private MenuItem actionSearchMenuItem;
     private MenuItem actionClearSearchMenuItem;
-    private Marker departureMarker;
-    private Marker arrivalMarker;
     private AsyncTask displayStationTask;
     private ArrayList<Marker> defaultMapStations;
 
@@ -208,6 +239,17 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         arrivalLocationButton = (ImageButton) findViewById(R.id.arrival_mylocation_button);
         arrivalLocationProgress = (ProgressBar) findViewById(R.id.arrival_mylocation_progress);
         arrivalStandsField = (EditText) findViewById(R.id.arrival_stands);
+        searchButton = (Button) findViewById(R.id.search_button);
+        View hideButton = findViewById(R.id.hide_search_view_button);
+
+        final GestureDetector swipeClickDetector = new GestureDetector(new SearchPanelGestureListener());
+        hideButton.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return swipeClickDetector.onTouchEvent(event);
+            }
+        });
+
 
         departureField.addTextChangedListener(new TextWatcher() {
             @Override
@@ -525,9 +567,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             case R.id.search_button:
                 startSearch();
                 break;
-            case R.id.hide_search_view_button:
-                hideSearchForm();
-                break;
+
         }
     }
 
@@ -894,8 +934,8 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             }
 
             if (!searchMapMarkersAdded) {
-                departureMarker = map.addMarker(new MarkerOptions().position(departureLocation).title(getString(R.string.departure)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_departure)));
-                arrivalMarker = map.addMarker(new MarkerOptions().position(arrivalLocation).title(getString(R.string.arrival)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_arrival)));
+                map.addMarker(new MarkerOptions().position(departureLocation).title(getString(R.string.departure)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_departure)));
+                map.addMarker(new MarkerOptions().position(arrivalLocation).title(getString(R.string.arrival)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_arrival)));
             }
 
             if (searchMapPolyline != null) {
@@ -948,7 +988,10 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
         mapView.animate().translationY(0);
         InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(FragmentActivity.INPUT_METHOD_SERVICE);
-        inputMethodManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
+        View focus = getCurrentFocus();
+        if (inputMethodManager != null && focus != null) {
+            inputMethodManager.hideSoftInputFromWindow(focus.getWindowToken(), 0);
+        }
     }
 
     private void fillAddressFieldWithCurrentLocation(int field) {
@@ -961,7 +1004,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     }
 
     private void startSearch() {
-
+        searchButton.setEnabled(false);
         boolean makeSearch = false;
 
         synchronized (stations) {
@@ -991,6 +1034,8 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
             searchStationsNearAddress(departureField.getText().toString().trim(), FIELD_DEPARTURE);
             searchStationsNearAddress(arrivalField.getText().toString().trim(), FIELD_ARRIVAL);
+        } else {
+            searchButton.setEnabled(true);
         }
     }
 
@@ -1012,9 +1057,9 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
             displaySearchResult();
 
-
         } else {
             Toast.makeText(MainActivity.this, R.string.path_impossible, Toast.LENGTH_LONG).show();
+            searchButton.setEnabled(true);
         }
     }
 
@@ -1026,11 +1071,13 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             @Override
             public void onError(Context context, int errorCode) {
                 Toast.makeText(MainActivity.this, R.string.ws_google_search_route_fail, Toast.LENGTH_LONG).show();
+                searchButton.setEnabled(true);
             }
 
             @Override
             public void onException(Context context, Exception e) {
                 Toast.makeText(MainActivity.this, R.string.ws_google_search_route_fail, Toast.LENGTH_LONG).show();
+                searchButton.setEnabled(true);
             }
 
             @Override
@@ -1053,6 +1100,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                                 findAndDisplaySearchStations();
                             }
                         } else {
+                            searchButton.setEnabled(true);
                             if (fieldId == FIELD_DEPARTURE) {
                                 Toast.makeText(MainActivity.this, R.string.arrival_unavailable, Toast.LENGTH_LONG).show();
                             }
@@ -1137,11 +1185,13 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             @Override
             public void onError(Context context, int errorCode) {
                 Toast.makeText(MainActivity.this, R.string.ws_google_search_route_fail, Toast.LENGTH_LONG).show();
+                searchButton.setEnabled(true);
             }
 
             @Override
             public void onException(Context context, Exception e) {
                 Toast.makeText(MainActivity.this, R.string.ws_google_search_route_fail, Toast.LENGTH_LONG).show();
+                searchButton.setEnabled(true);
             }
 
             @Override
@@ -1180,8 +1230,8 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                     }
 
                     if (!searchMapMarkersAdded) {
-                        departureMarker = map.addMarker(new MarkerOptions().position(departureLocation).title(getString(R.string.departure)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_departure)));
-                        arrivalMarker = map.addMarker(new MarkerOptions().position(arrivalLocation).title(getString(R.string.arrival)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_arrival)));
+                        map.addMarker(new MarkerOptions().position(departureLocation).title(getString(R.string.departure)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_departure)));
+                        map.addMarker(new MarkerOptions().position(arrivalLocation).title(getString(R.string.arrival)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_arrival)));
                     }
                     searchMapMarkersAdded = true;
 
@@ -1194,6 +1244,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 } else {
                     Toast.makeText(MainActivity.this, R.string.ws_google_search_route_fail, Toast.LENGTH_LONG).show();
                 }
+                searchButton.setEnabled(true);
             }
         });
         request.call();
