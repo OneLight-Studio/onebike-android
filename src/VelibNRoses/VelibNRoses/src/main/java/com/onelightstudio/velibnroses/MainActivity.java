@@ -381,7 +381,14 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
     @Override
     public void onConnected(Bundle bundle) {
-        loadStationsForCurrentUserLocation();
+        boolean firstLoading = false;
+        synchronized (stations) {
+            firstLoading = stations.isEmpty();
+        }
+        if (firstLoading) {
+            loadStationsForCurrentUserLocation();
+        }
+
         animateCameraOnMapUserLocEnable();
     }
 
@@ -390,68 +397,67 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
      * and launch a station loading for this place
      */
     private void loadStationsForCurrentUserLocation() {
-        if (stations.isEmpty()) {
-            Location userLocation = locationClient.getLastLocation();
-            if (userLocation == null) {
-                // Default location
-                launchFirstStationLoading(Constants.JCD_DEFAULT_CONTRACT_KEY);
-            } else {
-                // Retrieve city name
-                WSRequest request = new WSRequest(MainActivity.this, Constants.GOOGLE_API_GEOCODE_URL);
-                request.withParam(Constants.GOOGLE_API_LATLNG, userLocation.getLatitude() + "," + userLocation.getLongitude());
-                request.withParam(Constants.GOOGLE_API_SENSOR, "true");
-                request.handleWith(new WSDefaultHandler() {
 
-                    @Override
-                    public void onResult(Context context, JSONObject result) {
-                        String jcdContract = null;
-                        String cityName = null;
-                        JSONArray addresses = (JSONArray) result.opt("results");
-                        if (addresses.length() > 0) {
-                            JSONObject address = (JSONObject) addresses.opt(0);
-                            JSONArray addressComponents = address.optJSONArray("address_components");
-                            if (addressComponents != null) {
-                                localitySearch:
-                                for (int i = 0; i < addressComponents.length(); i++) {
-                                    JSONObject component = addressComponents.optJSONObject(i);
-                                    if (component != null) {
-                                        JSONArray types = component.optJSONArray("types");
-                                        if (types != null) {
-                                            for (int j = 0; j < types.length(); j++) {
-                                                String type = types.optString(j);
-                                                if ("locality".equals(type)) {
-                                                    cityName = component.optString("long_name");
-                                                    break localitySearch;
-                                                }
+        Location userLocation = locationClient.getLastLocation();
+        if (userLocation == null) {
+            // Default location
+            launchFirstStationLoading(Constants.JCD_DEFAULT_CONTRACT_KEY);
+        } else {
+            // Retrieve city name
+            WSRequest request = new WSRequest(MainActivity.this, Constants.GOOGLE_API_GEOCODE_URL);
+            request.withParam(Constants.GOOGLE_API_LATLNG, userLocation.getLatitude() + "," + userLocation.getLongitude());
+            request.withParam(Constants.GOOGLE_API_SENSOR, "true");
+            request.handleWith(new WSDefaultHandler() {
+
+                @Override
+                public void onResult(Context context, JSONObject result) {
+                    String jcdContract = null;
+                    String cityName = null;
+                    JSONArray addresses = (JSONArray) result.opt("results");
+                    if (addresses.length() > 0) {
+                        JSONObject address = (JSONObject) addresses.opt(0);
+                        JSONArray addressComponents = address.optJSONArray("address_components");
+                        if (addressComponents != null) {
+                            localitySearch:
+                            for (int i = 0; i < addressComponents.length(); i++) {
+                                JSONObject component = addressComponents.optJSONObject(i);
+                                if (component != null) {
+                                    JSONArray types = component.optJSONArray("types");
+                                    if (types != null) {
+                                        for (int j = 0; j < types.length(); j++) {
+                                            String type = types.optString(j);
+                                            if ("locality".equals(type)) {
+                                                cityName = component.optString("long_name");
+                                                break localitySearch;
                                             }
                                         }
                                     }
                                 }
                             }
                         }
-                        if (cityName != null) {
-                            // Retrieve contract covering this city
-                            jcdContract = Util.getContractNameForCity(cityName, MainActivity.this);
-                        }
-                        launchFirstStationLoading(jcdContract);
                     }
-
-                    @Override
-                    public void onException(Context context, Exception e) {
-                        launchFirstStationLoading(null);
+                    if (cityName != null) {
+                        // Retrieve contract covering this city
+                        jcdContract = Util.getContractNameForCity(cityName, MainActivity.this);
                     }
+                    launchFirstStationLoading(jcdContract);
+                }
 
-                    @Override
-                    public void onError(Context context, int errorCode) {
-                        launchFirstStationLoading(null);
-                    }
+                @Override
+                public void onException(Context context, Exception e) {
+                    launchFirstStationLoading(null);
+                }
 
-                });
-                request.call();
+                @Override
+                public void onError(Context context, int errorCode) {
+                    launchFirstStationLoading(null);
+                }
 
-            }
+            });
+            request.call();
 
         }
+
     }
 
     /**

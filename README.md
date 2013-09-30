@@ -32,5 +32,12 @@ An Android application that makes Velib'Toulouse even more fabulous
 
 That's it!
 
+# Updating the JCDecaux contracts file
+
+* Call the JCDecaux real time service:
+GET https://api.jcdecaux.com/vls/v1/contracts HTTP/1.1
+
+* Paste the result json in the `src/VelibNRoses/VelibNRoses/src/main/res/raw/contracts.json` file
+
 # MIT License
 This application is released under the MIT License. See the LICENSE file for more details.
