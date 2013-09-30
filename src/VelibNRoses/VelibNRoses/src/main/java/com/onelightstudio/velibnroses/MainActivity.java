@@ -182,7 +182,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
         stations = new ArrayList<Station>();
 
-        //Start timer
+        //Station loading task
         timeRunnable = new Runnable() {
 
             @Override
@@ -195,7 +195,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             }
         };
         timer = new Handler();
-        timer.post(timeRunnable);
+
 
         //Init view and elements
         searchView = findViewById(R.id.search_view);
@@ -350,13 +350,15 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     protected void onPause() {
         super.onPause();
         pausedTime = System.currentTimeMillis();
+
+        // Remove any refresh task previously posted
+        timer.removeCallbacks(timeRunnable);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         if (pausedTime != null) {
-
             if ((System.currentTimeMillis() - pausedTime) > Constants.MAP_TIMER_REFRESH_IN_MILLISECONDES) {
                 //Too much time has passed, a refresh is needed
                 loadStations();
@@ -379,12 +381,105 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
     @Override
     public void onConnected(Bundle bundle) {
+        boolean firstLoading = false;
+        synchronized (stations) {
+            firstLoading = stations.isEmpty();
+        }
+        if (firstLoading) {
+            loadStationsForCurrentUserLocation();
+        }
+
         animateCameraOnMapUserLocEnable();
+    }
+
+    /**
+     * Retrieve user location, a matching JCD contract name if any,
+     * and launch a station loading for this place
+     */
+    private void loadStationsForCurrentUserLocation() {
+
+        Location userLocation = locationClient.getLastLocation();
+        if (userLocation == null) {
+            // Default location
+            launchFirstStationLoading(Constants.JCD_DEFAULT_CONTRACT_KEY);
+        } else {
+            // Retrieve city name
+            WSRequest request = new WSRequest(MainActivity.this, Constants.GOOGLE_API_GEOCODE_URL);
+            request.withParam(Constants.GOOGLE_API_LATLNG, userLocation.getLatitude() + "," + userLocation.getLongitude());
+            request.withParam(Constants.GOOGLE_API_SENSOR, "true");
+            request.handleWith(new WSDefaultHandler() {
+
+                @Override
+                public void onResult(Context context, JSONObject result) {
+                    String jcdContract = null;
+                    String cityName = null;
+                    JSONArray addresses = (JSONArray) result.opt("results");
+                    if (addresses.length() > 0) {
+                        JSONObject address = (JSONObject) addresses.opt(0);
+                        JSONArray addressComponents = address.optJSONArray("address_components");
+                        if (addressComponents != null) {
+                            localitySearch:
+                            for (int i = 0; i < addressComponents.length(); i++) {
+                                JSONObject component = addressComponents.optJSONObject(i);
+                                if (component != null) {
+                                    JSONArray types = component.optJSONArray("types");
+                                    if (types != null) {
+                                        for (int j = 0; j < types.length(); j++) {
+                                            String type = types.optString(j);
+                                            if ("locality".equals(type)) {
+                                                cityName = component.optString("long_name");
+                                                break localitySearch;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (cityName != null) {
+                        // Retrieve contract covering this city
+                        jcdContract = Util.getContractNameForCity(cityName, MainActivity.this);
+                    }
+                    launchFirstStationLoading(jcdContract);
+                }
+
+                @Override
+                public void onException(Context context, Exception e) {
+                    launchFirstStationLoading(null);
+                }
+
+                @Override
+                public void onError(Context context, int errorCode) {
+                    launchFirstStationLoading(null);
+                }
+
+            });
+            request.call();
+
+        }
+
+    }
+
+    /**
+     * Launch a station loading (only one) for a specific contract.
+     * @param contract
+     */
+    private void launchFirstStationLoading(final String contract) {
+        timer.post(new Runnable() {
+            @Override
+            public void run() {
+                Log.d("First station loading, contract " + contract);
+                if (pausedTime == null) {
+                    loadStations(contract);
+                }
+            }
+        });
     }
 
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
-        //Nothing
+        //Launch full loading
+        timer.post(timeRunnable);
     }
 
     @Override
@@ -464,9 +559,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 map.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
                     @Override
                     public boolean onMarkerClick(Marker marker) {
-                        if (marker.equals(departureMarker) || marker.equals(arrivalMarker)) {
-                            return false;
-                        }
+
                         if (searchMode) {
                             for (Station station : searchMapDepartureStations) {
                                 if (station.searchMarker.equals(marker)) {
@@ -481,16 +574,16 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                                 }
                             }
                             displaySearchResult();
-                            return true;
                         } else {
                             LatLngBounds bounds = clusterBounds.get(marker);
                             if (bounds != null) {
                                 map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, getResources().getDimensionPixelSize(R.dimen.padding_zoom_cluster)));
-                                return true;
+                            } else {
+                                marker.showInfoWindow();
                             }
                         }
 
-                        return false;
+                        return true;
                     }
                 });
             } else {
@@ -517,6 +610,9 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     }
 
     private void loadStations() {
+        this.loadStations(null);
+    }
+    private void loadStations(final String contract) {
 
         loadStationCount++;
 
@@ -526,6 +622,9 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             Log.d("Call stations WS");
             WSRequest request = new WSRequest(this, Constants.JCD_URL);
             request.withParam(Constants.JCD_API_KEY, ((App) getApplication()).getApiKey(Constants.JCD_APP_API_KEY));
+            if (contract != null) {
+                request.withParam(Constants.JCD_CONTRACT, contract);
+            }
 
             boolean tmp = true;
             synchronized (stations) {
@@ -539,7 +638,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                     @Override
                     public void onResult(Context context, JSONObject result) {
                         loadStationCount = 0;
-                        parseJSONResult(result, executeInBackground);
+                        parseJSONResult(result, executeInBackground, false);
                     }
 
                     @Override
@@ -547,7 +646,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                         super.onException(context, e);
                         loadingStations = false;
                         if (loadStationCount < 3) {
-                            loadStations();
+                            loadStations(contract);
                         } else {
                             loadStationCount = 0;
                         }
@@ -558,7 +657,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                         super.onError(context, errorCode);
                         loadingStations = false;
                         if (loadStationCount < 3) {
-                            loadStations();
+                            loadStations(contract);
                         } else {
                             loadStationCount = 0;
                         }
@@ -569,7 +668,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                     @Override
                     public void onResult(Context context, JSONObject result) {
                         loadStationCount = 0;
-                        parseJSONResult(result, executeInBackground);
+                        parseJSONResult(result, executeInBackground, contract != null); // If it was restricted by a contract, relaunch a full one after result display
                     }
 
                     @Override
@@ -584,6 +683,9 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                                 Toast.makeText(MainActivity.this, R.string.ws_stations_not_availabel, Toast.LENGTH_LONG).show();
                             }
                             loadStationCount = 0;
+                            if (contract != null) {
+                                timer.post(timeRunnable);
+                            }
                         }
                     }
 
@@ -599,15 +701,19 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                                 Toast.makeText(MainActivity.this, R.string.ws_stations_not_availabel, Toast.LENGTH_LONG).show();
                             }
                             loadStationCount = 0;
+                            if (contract != null) {
+                                timer.post(timeRunnable);
+                            }
                         }
                     }
                 });
             }
+
             request.call();
         }
     }
 
-    private void parseJSONResult(final JSONObject result, final boolean inBackground) {
+    private void parseJSONResult(final JSONObject result, final boolean inBackground, final boolean relaunchStationLoading) {
         new AsyncTask<Void, Void, Void>() {
             @Override
             protected synchronized Void doInBackground(Void... voids) {
@@ -639,6 +745,9 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 }
                 displayStations();
                 loadingStations = false;
+                if (relaunchStationLoading) {
+                    timer.post(timeRunnable);
+                }
             }
 
             @Override

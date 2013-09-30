@@ -7,6 +7,14 @@ import android.util.DisplayMetrics;
 
 import com.google.android.gms.maps.model.LatLng;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -107,6 +115,49 @@ public class Util {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Retrieve the JC Decaux contract name covering a given city
+     * @param city
+     * @param context
+     * @return the contract name for this city, null if not covered
+     */
+    public static String getContractNameForCity(String city, Context context) {
+        InputStream is = context.getResources().openRawResource(R.raw.contracts);
+        try {
+            Reader reader = new InputStreamReader(is, "UTF_8");
+            int read;
+            final char[] buffer = new char[0x10000];
+            StringBuilder out = new StringBuilder();
+            do {
+                read = reader.read(buffer, 0, buffer.length);
+                if (read > 0) {
+                    out.append(buffer, 0, read);
+                }
+            } while (read >= 0);
+
+
+            String fileContent = out.toString();
+            JSONArray array = new JSONArray(fileContent);
+            for (int i = 0; i < array.length(); i++) {
+                JSONObject contract = array.getJSONObject(i);
+                JSONArray cities = contract.getJSONArray("cities");
+                for (int cityIndex = 0; cityIndex < cities.length(); cityIndex++) {
+                    String cityName = cities.getString(cityIndex);
+                    if (cityName.equalsIgnoreCase(city)) {
+                        return contract.getString("name");
+                    }
+                }
+            }
+
+        } catch (IOException e) {
+            Log.e("Could not read JCD Contract file", e);
+        } catch (JSONException e) {
+            Log.e("Could not parse JCD Contract file", e);
+        }
+
+        return null;
     }
 
 }
