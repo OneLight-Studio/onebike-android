@@ -9,10 +9,12 @@ import android.os.Handler;
 import android.support.v4.app.FragmentActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.GestureDetector;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
@@ -123,6 +125,35 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         }
     }
 
+    private class SearchPanelGestureListener extends GestureDetector.SimpleOnGestureListener {
+
+        private final int SWIPE_MIN_DISTANCE = 50;
+        private final int SWIPE_THRESHOLD_VELOCITY = 200;
+
+        @Override
+        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+            // Detect bottom to top gesture
+            if(e1.getY() - e2.getY() > SWIPE_MIN_DISTANCE && Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
+                hideSearchForm();
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public boolean onSingleTapUp(MotionEvent e) {
+            // Detect button click
+            hideSearchForm();
+            return true;
+        }
+
+        @Override
+        public boolean onDown(MotionEvent e) {
+            // Returns true to allow fling detection
+            return true;
+        }
+    }
+
     private static final int FIELD_DEPARTURE = 0;
     private static final int FIELD_ARRIVAL = 1;
     private final static String FORCE_CAMERA_POSITION = "ForceCameraPosition";
@@ -208,6 +239,15 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         arrivalLocationButton = (ImageButton) findViewById(R.id.arrival_mylocation_button);
         arrivalLocationProgress = (ProgressBar) findViewById(R.id.arrival_mylocation_progress);
         arrivalStandsField = (EditText) findViewById(R.id.arrival_stands);
+        View hideButton = findViewById(R.id.hide_search_view_button);
+
+        final GestureDetector swipeClickDetector = new GestureDetector(new SearchPanelGestureListener());
+        hideButton.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return swipeClickDetector.onTouchEvent(event);
+            }
+        });
 
         departureField.addTextChangedListener(new TextWatcher() {
             @Override
@@ -430,9 +470,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             case R.id.search_button:
                 startSearch();
                 break;
-            case R.id.hide_search_view_button:
-                hideSearchForm();
-                break;
+
         }
     }
 
@@ -839,7 +877,10 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
         mapView.animate().translationY(0);
         InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(FragmentActivity.INPUT_METHOD_SERVICE);
-        inputMethodManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
+        View focus = getCurrentFocus();
+        if (inputMethodManager != null && focus != null) {
+            inputMethodManager.hideSoftInputFromWindow(focus.getWindowToken(), 0);
+        }
     }
 
     private void fillAddressFieldWithCurrentLocation(int field) {
