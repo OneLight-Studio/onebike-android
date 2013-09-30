@@ -193,8 +193,6 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private Polyline searchMapPolyline;
     private MenuItem actionSearchMenuItem;
     private MenuItem actionClearSearchMenuItem;
-    private Marker departureMarker;
-    private Marker arrivalMarker;
     private AsyncTask displayStationTask;
     private ArrayList<Marker> defaultMapStations;
 
@@ -251,6 +249,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 return swipeClickDetector.onTouchEvent(event);
             }
         });
+
 
         departureField.addTextChangedListener(new TextWatcher() {
             @Override
@@ -566,7 +565,6 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 fillAddressFieldWithCurrentLocation(FIELD_ARRIVAL);
                 break;
             case R.id.search_button:
-                searchButton.setEnabled(false);
                 startSearch();
                 break;
 
@@ -936,8 +934,8 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             }
 
             if (!searchMapMarkersAdded) {
-                departureMarker = map.addMarker(new MarkerOptions().position(departureLocation).title(getString(R.string.departure)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_departure)));
-                arrivalMarker = map.addMarker(new MarkerOptions().position(arrivalLocation).title(getString(R.string.arrival)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_arrival)));
+                map.addMarker(new MarkerOptions().position(departureLocation).title(getString(R.string.departure)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_departure)));
+                map.addMarker(new MarkerOptions().position(arrivalLocation).title(getString(R.string.arrival)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_arrival)));
             }
 
             if (searchMapPolyline != null) {
@@ -1006,7 +1004,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     }
 
     private void startSearch() {
-
+        searchButton.setEnabled(false);
         boolean makeSearch = false;
 
         synchronized (stations) {
@@ -1232,8 +1230,8 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                     }
 
                     if (!searchMapMarkersAdded) {
-                        departureMarker = map.addMarker(new MarkerOptions().position(departureLocation).title(getString(R.string.departure)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_departure)));
-                        arrivalMarker = map.addMarker(new MarkerOptions().position(arrivalLocation).title(getString(R.string.arrival)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_arrival)));
+                        map.addMarker(new MarkerOptions().position(departureLocation).title(getString(R.string.departure)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_departure)));
+                        map.addMarker(new MarkerOptions().position(arrivalLocation).title(getString(R.string.arrival)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_arrival)));
                     }
                     searchMapMarkersAdded = true;
 

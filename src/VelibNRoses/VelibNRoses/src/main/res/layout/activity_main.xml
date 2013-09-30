@@ -24,6 +24,7 @@
                 android:layout_marginRight="8dp"
                 android:layout_toLeftOf="@+id/departure_bikes"
                 android:hint="@string/departure"
+                android:selectAllOnFocus="true"
                 android:paddingRight="40dp"
                 android:singleLine="true"/>
 
@@ -85,6 +86,7 @@
                 android:layout_marginRight="8dp"
                 android:layout_marginTop="8dp"
                 android:hint="@string/arrival"
+                android:selectAllOnFocus="true"
                 android:paddingRight="20dp"
                 android:singleLine="true" />
 
