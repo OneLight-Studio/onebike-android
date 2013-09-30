@@ -20,6 +20,7 @@ import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
@@ -171,6 +172,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
     private int loadStationCount = 0;
     private View searchView;
+    private Button searchButton;
     private View mapView;
     private boolean searchViewVisible;
     private AutoCompleteTextView departureField;
@@ -239,6 +241,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         arrivalLocationButton = (ImageButton) findViewById(R.id.arrival_mylocation_button);
         arrivalLocationProgress = (ProgressBar) findViewById(R.id.arrival_mylocation_progress);
         arrivalStandsField = (EditText) findViewById(R.id.arrival_stands);
+        searchButton = (Button) findViewById(R.id.search_button);
         View hideButton = findViewById(R.id.hide_search_view_button);
 
         final GestureDetector swipeClickDetector = new GestureDetector(new SearchPanelGestureListener());
@@ -468,6 +471,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 fillAddressFieldWithCurrentLocation(FIELD_ARRIVAL);
                 break;
             case R.id.search_button:
+                searchButton.setEnabled(false);
                 startSearch();
                 break;
 
@@ -923,6 +927,8 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
             searchStationsNearAddress(departureField.getText().toString().trim(), FIELD_DEPARTURE);
             searchStationsNearAddress(arrivalField.getText().toString().trim(), FIELD_ARRIVAL);
+        } else {
+            searchButton.setEnabled(true);
         }
     }
 
@@ -944,9 +950,9 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
             displaySearchResult();
 
-
         } else {
             Toast.makeText(MainActivity.this, R.string.path_impossible, Toast.LENGTH_LONG).show();
+            searchButton.setEnabled(true);
         }
     }
 
@@ -958,11 +964,13 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             @Override
             public void onError(Context context, int errorCode) {
                 Toast.makeText(MainActivity.this, R.string.ws_google_search_route_fail, Toast.LENGTH_LONG).show();
+                searchButton.setEnabled(true);
             }
 
             @Override
             public void onException(Context context, Exception e) {
                 Toast.makeText(MainActivity.this, R.string.ws_google_search_route_fail, Toast.LENGTH_LONG).show();
+                searchButton.setEnabled(true);
             }
 
             @Override
@@ -985,6 +993,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                                 findAndDisplaySearchStations();
                             }
                         } else {
+                            searchButton.setEnabled(true);
                             if (fieldId == FIELD_DEPARTURE) {
                                 Toast.makeText(MainActivity.this, R.string.arrival_unavailable, Toast.LENGTH_LONG).show();
                             }
@@ -1069,11 +1078,13 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             @Override
             public void onError(Context context, int errorCode) {
                 Toast.makeText(MainActivity.this, R.string.ws_google_search_route_fail, Toast.LENGTH_LONG).show();
+                searchButton.setEnabled(true);
             }
 
             @Override
             public void onException(Context context, Exception e) {
                 Toast.makeText(MainActivity.this, R.string.ws_google_search_route_fail, Toast.LENGTH_LONG).show();
+                searchButton.setEnabled(true);
             }
 
             @Override
@@ -1126,6 +1137,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 } else {
                     Toast.makeText(MainActivity.this, R.string.ws_google_search_route_fail, Toast.LENGTH_LONG).show();
                 }
+                searchButton.setEnabled(true);
             }
         });
         request.call();
