@@ -109,4 +109,19 @@ public class Util {
         return false;
     }
 
+    public static long getDistanceInMeters(LatLng point1, LatLng point2) {
+        double lat1 = point1.latitude;
+        double lng1 = point1.longitude;
+        double lat2 = point2.latitude;
+        double lng2 = point2.longitude;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLng = Math.toRadians(lng2 - lng1);
+        double radLat1 = Math.toRadians(lat1);
+        double radLat2 = Math.toRadians(lat2);
+
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.sin(dLng / 2) * Math.sin(dLng / 2) * Math.cos(radLat1) * Math.cos(radLat2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return (long) (Constants.EARTH_RADIUS * c);
+    }
+
 }

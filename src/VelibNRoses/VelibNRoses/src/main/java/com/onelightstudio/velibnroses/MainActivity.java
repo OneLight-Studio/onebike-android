@@ -55,7 +55,13 @@ import java.util.Map;
 
 public class MainActivity extends FragmentActivity implements GooglePlayServicesClient.ConnectionCallbacks, GooglePlayServicesClient.OnConnectionFailedListener, View.OnClickListener {
 
-    // INNER CLASSES AND PRIVATE MEMBERS
+
+    //----------------------------------------------------------------
+    //
+    //  INNER CLASS
+    //
+    //----------------------------------------------------------------
+
 
     class GetAddressTask extends AsyncTask<Location, Void, String> {
 
@@ -123,6 +129,14 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         }
     }
 
+
+    //----------------------------------------------------------------
+    //
+    //  CLASS PROPERTIES
+    //
+    //----------------------------------------------------------------
+
+
     private static final int FIELD_DEPARTURE = 0;
     private static final int FIELD_ARRIVAL = 1;
     private final static String FORCE_CAMERA_POSITION = "ForceCameraPosition";
@@ -130,18 +144,24 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private GoogleMap map;
     private boolean forceCameraPosition;
     private LocationClient locationClient;
+
+    // Global list
     private ArrayList<Station> stations;
-    private boolean loadingStations;
+
+    // Properties to load stations
     private Handler timer;
     private Runnable timeRunnable;
     private Long pausedTime;
-    private HashMap<Marker, LatLngBounds> clusterBounds;
-    private boolean searchMode;
+    private int loadStationsTry = 0;
+    private boolean loadingStations;
+    private AsyncTask displayStationsTask;
 
-    private int loadStationCount = 0;
+    // UI items
     private View searchView;
     private View mapView;
     private boolean searchViewVisible;
+    private MenuItem actionSearchMenuItem;
+    private MenuItem actionClearSearchMenuItem;
     private AutoCompleteTextView departureField;
     private ImageButton departureLocationButton;
     private ProgressBar departureLocationProgress;
@@ -152,20 +172,23 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private EditText arrivalStandsField;
     private LatLng departureLocation;
     private LatLng arrivalLocation;
-    private ArrayList<Station> searchMapDepartureStations;
-    private ArrayList<Station> searchMapArrivalStations;
-    private Station searchMapDepartureStation;
-    private Station searchMapArrivalStation;
-    private boolean searchMapMarkersAdded;
-    private Polyline searchMapPolyline;
-    private MenuItem actionSearchMenuItem;
-    private MenuItem actionClearSearchMenuItem;
-    private Marker departureMarker;
-    private Marker arrivalMarker;
-    private AsyncTask displayStationTask;
-    private ArrayList<Marker> defaultMapStations;
 
-    // ACTIVITY LIFECYCLE
+    // Markers and search mode stuff
+    private boolean searchMode;
+    private ArrayList<Station> searchModeDepartureStations;
+    private ArrayList<Station> searchModeArrivalStations;
+    private Station searchModeDepartureStation;
+    private Station searchModeArrivalStation;
+    private Polyline searchModePolyline;
+    private ArrayList<Marker> normalModeCurrentMarkers;
+
+
+    //----------------------------------------------------------------
+    //
+    //  ACTIVITY LIFECYCLE
+    //
+    //----------------------------------------------------------------
+
 
     @Override
     public void onAttachedToWindow() {
@@ -182,14 +205,20 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
         stations = new ArrayList<Station>();
 
-        //Start timer
+        // Start timer
         timeRunnable = new Runnable() {
 
             @Override
             public void run() {
                 Log.d("Refresh Map Tick");
                 if (pausedTime == null) {
-                    loadStations();
+                    boolean isStationsEmpty;
+                    synchronized (stations) {
+                        isStationsEmpty = stations.isEmpty();
+                    }
+                    // Load stations in background only if it's not the first time
+                    loadStations(!isStationsEmpty);
+
                     timer.postDelayed(this, Constants.MAP_TIMER_REFRESH_IN_MILLISECONDES);
                 }
             }
@@ -197,7 +226,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         timer = new Handler();
         timer.post(timeRunnable);
 
-        //Init view and elements
+        // Init view and elements
         searchView = findViewById(R.id.search_view);
         mapView = findViewById(R.id.map_view);
         departureField = (AutoCompleteTextView) findViewById(R.id.departure_field);
@@ -212,12 +241,12 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         departureField.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
-                //Nothing
+                // Nothing
             }
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
-                //Nothing
+                // Nothing
             }
 
             @Override
@@ -266,7 +295,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
                         (keyCode == KeyEvent.KEYCODE_ENTER)) {
                     // Perform action on Enter key press
-                    startSearch();
+                    searchModeStartSearch();
                     return true;
                 }
                 return false;
@@ -280,7 +309,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
                         (keyCode == KeyEvent.KEYCODE_ENTER)) {
                     // Perform action on Enter key press
-                    startSearch();
+                    searchModeStartSearch();
                     return true;
                 }
                 return false;
@@ -290,12 +319,12 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         arrivalField.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
-                //Nothing
+                // Nothing
             }
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
-                //Nothing
+                // Nothing
             }
 
             @Override
@@ -309,12 +338,12 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         departureBikesField.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
-                //Nothing
+                // Nothing
             }
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
-                //Nothing
+                // Nothing
             }
 
             @Override
@@ -323,10 +352,10 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             }
         });
 
-        //Default map markers
-        defaultMapStations = new ArrayList<Marker>();
+        // Default map markers
+        normalModeCurrentMarkers = new ArrayList<Marker>();
 
-        //Station request
+        // Station request
         loadingStations = false;
 
         if (pSavedInstanceState != null) {
@@ -356,10 +385,9 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     protected void onResume() {
         super.onResume();
         if (pausedTime != null) {
-
             if ((System.currentTimeMillis() - pausedTime) > Constants.MAP_TIMER_REFRESH_IN_MILLISECONDES) {
-                //Too much time has passed, a refresh is needed
-                loadStations();
+                // Too much time has passed, a refresh is needed
+                loadStations(true);
                 timer.postDelayed(timeRunnable, Constants.MAP_TIMER_REFRESH_IN_MILLISECONDES);
             } else {
                 timer.postDelayed(timeRunnable, Constants.MAP_TIMER_REFRESH_IN_MILLISECONDES - (System.currentTimeMillis() - pausedTime));
@@ -375,7 +403,13 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         pOutState.putBoolean(FORCE_CAMERA_POSITION, false);
     }
 
-    // LISTENER CALLBACKS
+
+    //----------------------------------------------------------------
+    //
+    //  LISTENER CALLBACKS
+    //
+    //----------------------------------------------------------------
+
 
     @Override
     public void onConnected(Bundle bundle) {
@@ -384,12 +418,12 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
-        //Nothing
+        // Nothing
     }
 
     @Override
     public void onDisconnected() {
-        //Nothing
+        // Nothing
     }
 
     @Override
@@ -411,7 +445,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 startActivity(new Intent(this, InfoActivity.class));
                 return true;
             case R.id.action_clear_search:
-                clearSearch();
+                quitSearchMode();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -428,10 +462,10 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 fillAddressFieldWithCurrentLocation(FIELD_ARRIVAL);
                 break;
             case R.id.search_button:
-                startSearch();
+                searchModeStartSearch();
                 break;
             case R.id.hide_search_view_button:
-                hideSearchForm();
+                hideSearchView();
                 break;
         }
     }
@@ -439,13 +473,23 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     @Override
     public void onBackPressed() {
         if (searchViewVisible) {
-            hideSearchForm();
+            hideSearchView();
         } else {
             super.onBackPressed();
         }
     }
 
-    // PRIVATE METHODS
+    public LocationClient getLocationClient() {
+        return locationClient;
+    }
+
+
+    //----------------------------------------------------------------
+    //
+    //  PRIVATE METHODS
+    //
+    //----------------------------------------------------------------
+
 
     private void setUpMapIfNeeded() {
         // Do a null check to confirm that we have not already instantiated the map.
@@ -464,37 +508,33 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 map.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
                     @Override
                     public boolean onMarkerClick(Marker marker) {
-                        if (marker.equals(departureMarker) || marker.equals(arrivalMarker)) {
-                            return false;
-                        }
                         if (searchMode) {
-                            for (Station station : searchMapDepartureStations) {
-                                if (station.searchMarker.equals(marker)) {
-                                    searchMapDepartureStation = station;
-                                    break;
+                            // Do not update the route if clicked marker is already the start or finish point
+                            if (!marker.equals(searchModeDepartureStation.searchMarker) && !marker.equals(searchModeArrivalStation.searchMarker)) {
+                                for (Station station : searchModeDepartureStations) {
+                                    if (station.searchMarker.equals(marker)) {
+                                        searchModeDepartureStation = station;
+                                        break;
+                                    }
                                 }
-                            }
-                            for (Station station : searchMapArrivalStations) {
-                                if (station.searchMarker.equals(marker)) {
-                                    searchMapArrivalStation = station;
-                                    break;
+                                for (Station station : searchModeArrivalStations) {
+                                    if (station.searchMarker.equals(marker)) {
+                                        searchModeArrivalStation = station;
+                                        break;
+                                    }
                                 }
+
+                                searchModeDisplayRoute();
                             }
-                            displaySearchResult();
-                            return true;
                         } else {
-                            LatLngBounds bounds = clusterBounds.get(marker);
-                            if (bounds != null) {
-                                map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, getResources().getDimensionPixelSize(R.dimen.padding_zoom_cluster)));
-                                return true;
-                            }
+                            marker.showInfoWindow();
                         }
 
-                        return false;
+                        return true;
                     }
                 });
             } else {
-                //Tell the user to check its google play services
+                // Tell the user to check its google play services
                 Toast.makeText(this, R.string.error_google_play_service, Toast.LENGTH_LONG).show();
             }
         }
@@ -516,40 +556,31 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         }
     }
 
-    private void loadStations() {
+    private void loadStations(final boolean executeInBackground) {
+        loadStationsTry++;
 
-        loadStationCount++;
-
-        Log.d("loadStations " + loadingStations + " retry: " + loadStationCount);
+        Log.d("loadStations " + loadingStations + " try num: " + loadStationsTry);
         if (!loadingStations) {
             loadingStations = true;
             Log.d("Call stations WS");
             WSRequest request = new WSRequest(this, Constants.JCD_URL);
             request.withParam(Constants.JCD_API_KEY, ((App) getApplication()).getApiKey(Constants.JCD_APP_API_KEY));
-
-            boolean tmp = true;
-            synchronized (stations) {
-                tmp = !stations.isEmpty();
-            }
-
-            final boolean executeInBackground = tmp;
-
             if (executeInBackground) {
                 request.handleWith(new WSSilentHandler() {
                     @Override
                     public void onResult(Context context, JSONObject result) {
-                        loadStationCount = 0;
-                        parseJSONResult(result, executeInBackground);
+                        loadStationsTry = 0;
+                        loadStationsParseJSONResult(result, executeInBackground);
                     }
 
                     @Override
                     public void onException(Context context, Exception e) {
                         super.onException(context, e);
                         loadingStations = false;
-                        if (loadStationCount < 3) {
-                            loadStations();
+                        if (loadStationsTry < 3) {
+                            loadStations(executeInBackground);
                         } else {
-                            loadStationCount = 0;
+                            loadStationsTry = 0;
                         }
                     }
 
@@ -557,10 +588,10 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                     public void onError(Context context, int errorCode) {
                         super.onError(context, errorCode);
                         loadingStations = false;
-                        if (loadStationCount < 3) {
-                            loadStations();
+                        if (loadStationsTry < 3) {
+                            loadStations(executeInBackground);
                         } else {
-                            loadStationCount = 0;
+                            loadStationsTry = 0;
                         }
                     }
                 });
@@ -568,52 +599,52 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 request.handleWith(new WSDefaultHandler() {
                     @Override
                     public void onResult(Context context, JSONObject result) {
-                        loadStationCount = 0;
-                        parseJSONResult(result, executeInBackground);
+                        loadStationsTry = 0;
+                        loadStationsParseJSONResult(result, executeInBackground);
                     }
 
                     @Override
                     public void onException(Context context, Exception e) {
                         loadingStations = false;
-                        if (loadStationCount < 3) {
-                            loadStations();
+                        if (loadStationsTry < 3) {
+                            loadStations(executeInBackground);
                         } else {
                             if (!Util.isOnline(MainActivity.this)) {
                                 Toast.makeText(MainActivity.this, R.string.internet_not_available, Toast.LENGTH_LONG).show();
                             } else {
                                 Toast.makeText(MainActivity.this, R.string.ws_stations_not_availabel, Toast.LENGTH_LONG).show();
                             }
-                            loadStationCount = 0;
+                            loadStationsTry = 0;
                         }
                     }
 
                     @Override
                     public void onError(Context context, int errorCode) {
                         loadingStations = false;
-                        if (loadStationCount < 3) {
-                            loadStations();
+                        if (loadStationsTry < 3) {
+                            loadStations(executeInBackground);
                         } else {
                             if (!Util.isOnline(MainActivity.this)) {
                                 Toast.makeText(MainActivity.this, R.string.internet_not_available, Toast.LENGTH_LONG).show();
                             } else {
                                 Toast.makeText(MainActivity.this, R.string.ws_stations_not_availabel, Toast.LENGTH_LONG).show();
                             }
-                            loadStationCount = 0;
+                            loadStationsTry = 0;
                         }
                     }
                 });
             }
+
             request.call();
         }
     }
 
-    private void parseJSONResult(final JSONObject result, final boolean inBackground) {
+    private void loadStationsParseJSONResult(final JSONObject result, final boolean inBackground) {
         new AsyncTask<Void, Void, Void>() {
             @Override
             protected synchronized Void doInBackground(Void... voids) {
                 if (result != null) {
                     JSONArray stationsJSON = (JSONArray) result.opt("list");
-                    Log.i("Stations received : " + stationsJSON.length() + " stations");
                     synchronized (stations) {
                         stations.clear();
                         for (int i = 0; i < stationsJSON.length(); i++) {
@@ -637,8 +668,11 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 if (!inBackground) {
                     setProgressBarIndeterminateVisibility(false);
                 }
-                displayStations();
-                loadingStations = false;
+
+                if (map != null) {
+                    displayStations();
+                    loadingStations = false;
+                }
             }
 
             @Override
@@ -650,163 +684,157 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             protected void onCancelled(Void aVoid) {
                 loadingStations = false;
             }
-
-
         }.execute();
     }
 
     private void displayStations() {
-        if (!searchMode) {
-
-            if (displayStationTask != null && displayStationTask.getStatus() != AsyncTask.Status.FINISHED) {
-                Log.d("Cancel previous displayStationTask");
-                displayStationTask.cancel(true);
-            }
-
-            displayStationTask = new AsyncTask<Void, Void, HashMap<MarkerOptions, LatLngBounds>>() {
-
-                private LatLngBounds bounds;
-                private float zoomLevel;
-                private float maxZoomLevel;
-
-                @Override
-                protected void onPreExecute() {
-                    bounds = map.getProjection().getVisibleRegion().latLngBounds;
-                    zoomLevel = map.getCameraPosition().zoom;
-                    maxZoomLevel = map.getMaxZoomLevel();
-                }
-
-                @Override
-                protected HashMap<MarkerOptions, LatLngBounds> doInBackground(Void... voids) {
-                    // keep the stations in the viewport only
-                    ArrayList<Station> stationsInViewport = new ArrayList<Station>();
-                    synchronized (stations) {
-                        for (Station station : stations) {
-                            if (bounds.contains(station.latLng)) {
-                                stationsInViewport.add(station);
-                            }
-                        }
-                    }
-                    // create the markers, clustering if needed
-                    clusterBounds = new HashMap<Marker, LatLngBounds>();
-                    HashMap<MarkerOptions, LatLngBounds> markers = new HashMap<MarkerOptions, LatLngBounds>();
-                    ArrayList<Station> unprocessedStations = (ArrayList<Station>) stationsInViewport.clone();
-                    for (Station station : stationsInViewport) {
-                        if (unprocessedStations.contains(station)) {
-                            unprocessedStations.remove(station);
-                            LatLngBounds.Builder clusterBoundsBuilder = new LatLngBounds.Builder().include(station.latLng);
-                            int n = 1;
-                            for (Iterator<Station> otherIt = unprocessedStations.iterator(); otherIt.hasNext(); ) {
-                                Station otherStation = otherIt.next();
-                                // http://gis.stackexchange.com/questions/7430/google-maps-zoom-level-ratio
-                                int maxDistance = (int) (Math.pow(2, maxZoomLevel - zoomLevel) * 2.5);
-                                if (getDistanceInMeters(station.latLng, otherStation.latLng) < maxDistance) {
-                                    clusterBoundsBuilder.include(otherStation.latLng);
-                                    otherIt.remove();
-                                    n++;
-                                }
-                            }
-                            if (n > 1) {
-                                LatLngBounds bounds = clusterBoundsBuilder.build();
-                                markers.put(StationMarker.createCluster(bounds), bounds);
-                            } else {
-                                markers.put(StationMarker.createMarker(MainActivity.this, station), null);
-                            }
-                        }
-                    }
-                    return markers;
-                }
-
-                protected void onPostExecute(HashMap<MarkerOptions, LatLngBounds> markers) {
-                    ArrayList<Marker> tmpAddedMarkers = new ArrayList<Marker>();
-
-                    for (Map.Entry<MarkerOptions, LatLngBounds> markerEntry : markers.entrySet()) {
-                        Marker marker = map.addMarker(markerEntry.getKey());
-                        tmpAddedMarkers.add(marker);
-
-                        if (markerEntry.getValue() != null) {
-                            clusterBounds.put(marker, markerEntry.getValue());
-                        }
-                    }
-
-                    for (Marker stationMarker : defaultMapStations) {
-                        stationMarker.remove();
-                    }
-
-                    defaultMapStations = tmpAddedMarkers;
-                }
-            }.execute();
+        if (searchMode) {
+            searchModeUpdateStations();
         } else {
-
-            Log.d("Update the displayed markers");
-
-            synchronized (stations) {
-                for (Station updatedStation : stations) {
-                    for (Station station : searchMapDepartureStations) {
-                        if (station.lng == updatedStation.lng && station.lat == updatedStation.lat) {
-                            // If there is not enough bikes, do not display it anymore
-                            if (updatedStation.availableBikes < Integer.valueOf(departureBikesField.getText().toString())) {
-                                findAndDisplaySearchStations();
-                                return;
-                            } else {
-                                searchMapDepartureStations.set(searchMapDepartureStations.indexOf(station), updatedStation);
-                                break;
-                            }
-                        }
-                    }
-                    for (Station station : searchMapArrivalStations) {
-                        if (station.lng == updatedStation.lng && station.lat == updatedStation.lat) {
-                            // If there is not enough stands, do not display it anymore
-                            if (updatedStation.availableBikeStands < Integer.valueOf(arrivalStandsField.getText().toString())) {
-                                findAndDisplaySearchStations();
-                                return;
-                            } else {
-                                searchMapArrivalStations.set(searchMapArrivalStations.indexOf(station), updatedStation);
-                                break;
-                            }
-
-                        }
-                    }
-                }
-            }
-            clearMap();
-
-            searchMapMarkersAdded = false;
-
-            for (Station station : searchMapDepartureStations) {
-                if (!searchMapMarkersAdded) {
-                    station.searchMarker = map.addMarker(StationMarker.createMarker(MainActivity.this, station));
-                }
-            }
-            for (Station station : searchMapArrivalStations) {
-                if (!searchMapMarkersAdded) {
-                    station.searchMarker = map.addMarker(StationMarker.createMarker(MainActivity.this, station));
-                }
-            }
-
-            if (!searchMapMarkersAdded) {
-                departureMarker = map.addMarker(new MarkerOptions().position(departureLocation).title(getString(R.string.departure)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_departure)));
-                arrivalMarker = map.addMarker(new MarkerOptions().position(arrivalLocation).title(getString(R.string.arrival)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_arrival)));
-            }
-
-            if (searchMapPolyline != null) {
-                PolylineOptions options = new PolylineOptions().addAll(searchMapPolyline.getPoints()).width(getResources().getDimensionPixelSize(R.dimen.polyline_width)).color(getResources().getColor(R.color.green)).geodesic(true);
-                if (searchMapPolyline != null) {
-                    searchMapPolyline.remove();
-                }
-                searchMapPolyline = map.addPolyline(options);
-            }
-
-
-            searchMapMarkersAdded = true;
-
+            normalModeDisplayStations();
         }
+    }
+
+    private void normalModeDisplayStations() {
+        if (displayStationsTask != null && displayStationsTask.getStatus() != AsyncTask.Status.FINISHED) {
+            Log.d("Cancel previous displayStationTask");
+            displayStationsTask.cancel(true);
+        }
+
+        displayStationsTask = new AsyncTask<Void, Void, HashMap<MarkerOptions, LatLngBounds>>() {
+            private LatLngBounds bounds;
+            private float zoomLevel;
+            private float maxZoomLevel;
+            private HashMap<Marker, LatLngBounds> clusterBounds;
+
+            @Override
+            protected void onPreExecute() {
+                bounds = map.getProjection().getVisibleRegion().latLngBounds;
+                zoomLevel = map.getCameraPosition().zoom;
+                maxZoomLevel = map.getMaxZoomLevel();
+            }
+
+            @Override
+            protected HashMap<MarkerOptions, LatLngBounds> doInBackground(Void... voids) {
+                // Keep the stations in the viewport only
+                ArrayList<Station> stationsInViewport = new ArrayList<Station>();
+                synchronized (stations) {
+                    for (Station station : stations) {
+                        if (bounds.contains(station.latLng)) {
+                            stationsInViewport.add(station);
+                        }
+                    }
+                }
+
+                // Create the markers, clustering if needed
+                clusterBounds = new HashMap<Marker, LatLngBounds>();
+                HashMap<MarkerOptions, LatLngBounds> markers = new HashMap<MarkerOptions, LatLngBounds>();
+                ArrayList<Station> unprocessedStations = (ArrayList<Station>) stationsInViewport.clone();
+                for (Station station : stationsInViewport) {
+                    if (unprocessedStations.contains(station)) {
+                        unprocessedStations.remove(station);
+                        LatLngBounds.Builder clusterBoundsBuilder = new LatLngBounds.Builder().include(station.latLng);
+                        int n = 1;
+                        for (Iterator<Station> otherIt = unprocessedStations.iterator(); otherIt.hasNext(); ) {
+                            Station otherStation = otherIt.next();
+                            // Source : http://gis.stackexchange.com/questions/7430/google-maps-zoom-level-ratio
+                            int maxDistance = (int) (Math.pow(2, maxZoomLevel - zoomLevel) * 2.5);
+                            if (Util.getDistanceInMeters(station.latLng, otherStation.latLng) < maxDistance) {
+                                clusterBoundsBuilder.include(otherStation.latLng);
+                                otherIt.remove();
+                                n++;
+                            }
+                        }
+                        if (n > 1) {
+                            LatLngBounds bounds = clusterBoundsBuilder.build();
+                            markers.put(StationMarker.createCluster(bounds), bounds);
+                        } else {
+                            markers.put(StationMarker.createMarker(MainActivity.this, station), null);
+                        }
+                    }
+                }
+                return markers;
+            }
+
+            protected void onPostExecute(HashMap<MarkerOptions, LatLngBounds> markers) {
+                ArrayList<Marker> tmpAddedMarkers = new ArrayList<Marker>();
+
+                for (Map.Entry<MarkerOptions, LatLngBounds> markerEntry : markers.entrySet()) {
+                    Marker marker = map.addMarker(markerEntry.getKey());
+                    tmpAddedMarkers.add(marker);
+
+                    if (markerEntry.getValue() != null) {
+                        clusterBounds.put(marker, markerEntry.getValue());
+                    }
+                }
+
+                for (Marker stationMarker : normalModeCurrentMarkers) {
+                    stationMarker.remove();
+                }
+
+                normalModeCurrentMarkers = tmpAddedMarkers;
+            }
+        }.execute();
+    }
+
+    private void searchModeUpdateStations() {
+        Log.d("Update the displayed markers");
+
+        /*synchronized (stations) {
+            for (Station updatedStation : stations) {
+                for (Station station : searchModeDepartureStations) {
+                    if (station.lng == updatedStation.lng && station.lat == updatedStation.lat) {
+                        // If there is not enough bikes, do not display it anymore
+                        if (updatedStation.availableBikes < Integer.valueOf(departureBikesField.getText().toString())) {
+                            findAndDisplaySearchStations();
+                            return;
+                        } else {
+                            searchModeDepartureStations.set(searchModeDepartureStations.indexOf(station), updatedStation);
+                            break;
+                        }
+                    }
+                }
+                for (Station station : searchModeArrivalStations) {
+                    if (station.lng == updatedStation.lng && station.lat == updatedStation.lat) {
+                        // If there is not enough stands, do not display it anymore
+                        if (updatedStation.availableBikeStands < Integer.valueOf(arrivalStandsField.getText().toString())) {
+                            findAndDisplaySearchStations();
+                            return;
+                        } else {
+                            searchModeArrivalStations.set(searchModeArrivalStations.indexOf(station), updatedStation);
+                            break;
+                        }
+
+                    }
+                }
+            }
+        }
+        clearMap();
+
+        for (Station station : searchModeDepartureStations) {
+            station.searchMarker = map.addMarker(StationMarker.createMarker(MainActivity.this, station));
+        }
+
+        for (Station station : searchModeArrivalStations) {
+            station.searchMarker = map.addMarker(StationMarker.createMarker(MainActivity.this, station));
+        }
+
+        if (!searchModeMarkersAdded) {
+            departureMarker = map.addMarker(new MarkerOptions().position(departureLocation).title(getString(R.string.departure)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_departure)));
+            arrivalMarker = map.addMarker(new MarkerOptions().position(arrivalLocation).title(getString(R.string.arrival)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_arrival)));
+        }
+
+        if (searchModePolyline != null) {
+
+            PolylineOptions options = new PolylineOptions().addAll(searchModePolyline.getPoints()).width(getResources().getDimensionPixelSize(R.dimen.polyline_width)).color(getResources().getColor(R.color.green)).geodesic(true);
+            searchModePolyline = map.addPolyline(options);
+        }*/
     }
 
     private void clearMap() {
         if (map != null) {
             map.clear();
-            defaultMapStations.clear();
+            normalModeCurrentMarkers.clear();
         }
     }
 
@@ -818,18 +846,18 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             this.actionClearSearchMenuItem.setVisible(false);
             mapView.animate().translationY(searchView.getHeight());
         } else {
-            hideSearchForm();
+            hideSearchView();
         }
     }
 
-    private void clearSearch() {
+    private void quitSearchMode() {
         searchMode = false;
         actionClearSearchMenuItem.setVisible(false);
         clearMap();
         displayStations();
     }
 
-    private void hideSearchForm() {
+    private void hideSearchView() {
         searchViewVisible = false;
         this.actionSearchMenuItem.setVisible(true);
 
@@ -851,9 +879,8 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         }
     }
 
-    private void startSearch() {
-
-        boolean makeSearch = false;
+    private void searchModeStartSearch() {
+        boolean doSearch = false;
 
         synchronized (stations) {
             if (departureField.getText().toString().trim().length() == 0) {
@@ -863,53 +890,28 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             } else if (stations.isEmpty()) {
                 Toast.makeText(this, R.string.stations_not_available, Toast.LENGTH_LONG).show();
             } else {
-                makeSearch = true;
+                doSearch = true;
             }
         }
 
-        if (makeSearch) {
+        if (doSearch) {
             departureLocation = null;
             arrivalLocation = null;
-            searchMapDepartureStation = null;
-            searchMapArrivalStation = null;
-            searchMapDepartureStations = null;
-            searchMapArrivalStations = null;
-            searchMapMarkersAdded = false;
+            searchModeDepartureStation = null;
+            searchModeArrivalStation = null;
+            searchModeDepartureStations = null;
+            searchModeArrivalStations = null;
 
-            //Close keyboard
+            // Close keyboard
             InputMethodManager inputManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
             inputManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
 
-            searchStationsNearAddress(departureField.getText().toString().trim(), FIELD_DEPARTURE);
-            searchStationsNearAddress(arrivalField.getText().toString().trim(), FIELD_ARRIVAL);
+            searchModeLoadFieldLocation(departureField.getText().toString().trim(), FIELD_DEPARTURE);
+            searchModeLoadFieldLocation(arrivalField.getText().toString().trim(), FIELD_ARRIVAL);
         }
     }
 
-    /**
-     * Find the stations near departure and arrival locations, and display them
-     */
-    private void findAndDisplaySearchStations() {
-        searchMapDepartureStations = searchStationsNearLocation(departureLocation, arrivalLocation, Integer.valueOf(departureBikesField.getText().toString()), FIELD_DEPARTURE);
-        searchMapArrivalStations = searchStationsNearLocation(departureLocation, arrivalLocation, Integer.valueOf(arrivalStandsField.getText().toString()), FIELD_ARRIVAL);
-        if (map != null && searchMapDepartureStations.size() > 0 && searchMapArrivalStations.size() > 0) {
-
-            searchMode = true;
-            actionClearSearchMenuItem.setVisible(true);
-
-            clearMap();
-
-            searchMapDepartureStation = searchMapDepartureStations.get(0);
-            searchMapArrivalStation = searchMapArrivalStations.get(0);
-
-            displaySearchResult();
-
-
-        } else {
-            Toast.makeText(MainActivity.this, R.string.path_impossible, Toast.LENGTH_LONG).show();
-        }
-    }
-
-    private void searchStationsNearAddress(String address, final int fieldId) {
+    private void searchModeLoadFieldLocation(String address, final int fieldId) {
         WSRequest request = new WSRequest(MainActivity.this, Constants.GOOGLE_API_GEOCODE_URL);
         request.withParam(Constants.GOOGLE_API_ADDRESS, address);
         request.withParam(Constants.GOOGLE_API_SENSOR, "true");
@@ -940,8 +942,14 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                             if (fieldId == FIELD_ARRIVAL) {
                                 arrivalLocation = new LatLng(lat, lng);
                             }
+
+                            // This function is called for departure and arrival fields
+                            // Once we have the 2 location, the stations and route loading can continue
                             if (departureLocation != null && arrivalLocation != null) {
-                                findAndDisplaySearchStations();
+                                if (searchModeLoadStationsAndRoute()) {
+                                    searchModeDisplayStationsAndRoute();
+                                    searchModeDisplayRoute();
+                                }
                             }
                         } else {
                             if (fieldId == FIELD_DEPARTURE) {
@@ -958,70 +966,35 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         request.call();
     }
 
-    private ArrayList<Station> searchStationsNearLocation(LatLng startLocation, LatLng finishLocation, int bikesNumber, int fieldId) {
-        int matchingStationNumber = 0;
-        LatLng location;
-        ArrayList<Station> matchingStations = new ArrayList<Station>();
-
-        if (fieldId == FIELD_DEPARTURE) {
-            location = startLocation;
+    private boolean searchModeLoadStationsAndRoute() {
+        searchModeDepartureStations = getStationsNearLocation(departureLocation, arrivalLocation, Integer.valueOf(departureBikesField.getText().toString()), FIELD_DEPARTURE);
+        searchModeArrivalStations = getStationsNearLocation(departureLocation, arrivalLocation, Integer.valueOf(arrivalStandsField.getText().toString()), FIELD_ARRIVAL);
+        if (map != null && searchModeDepartureStations.size() > 0 && searchModeArrivalStations.size() > 0) {
+            searchMode = true;
+            actionClearSearchMenuItem.setVisible(true);
+            searchModeDepartureStation = searchModeDepartureStations.get(0);
+            searchModeArrivalStation = searchModeArrivalStations.get(0);
         } else {
-            location = finishLocation;
+            Toast.makeText(MainActivity.this, R.string.path_impossible, Toast.LENGTH_LONG).show();
+            return false;
         }
 
-        long radiusDist = getDistanceInMeters(startLocation, finishLocation) / 2;
-        if (radiusDist > Constants.STATION_SEARCH_MAX_RADIUS_IN_METERS) {
-            radiusDist = Constants.STATION_SEARCH_MAX_RADIUS_IN_METERS;
-        }
-        if (radiusDist < Constants.STATION_SEARCH_MIN_RADIUS_IN_METERS) {
-            radiusDist = Constants.STATION_SEARCH_MIN_RADIUS_IN_METERS;
-        }
-
-        Log.e(getDistanceInMeters(startLocation, finishLocation) + "");
-        Log.e(radiusDist + "");
-
-        Map<Station, Long> distanceStations = new HashMap<Station, Long>();
-        // find all stations distance for a radius
-        synchronized (stations) {
-            for (Station station : stations) {
-                if (!Double.isNaN(station.lat) && !Double.isNaN(station.lng)) {
-                    Long distance = Long.valueOf(MainActivity.this.getDistanceInMeters(location, station.latLng));
-                    if (distance.longValue() <= radiusDist) {
-                        if (fieldId == FIELD_DEPARTURE) {
-                            if (station.availableBikes >= bikesNumber) {
-                                distanceStations.put(station, distance);
-                            }
-                        } else {
-                            if (station.availableBikeStands >= bikesNumber) {
-                                distanceStations.put(station, distance);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // sort station by distance and get the first SEARCH_RESULT_MAX_STATIONS_NUMBER stations
-        distanceStations = Util.sortMapByValues(distanceStations);
-        for (Map.Entry<Station, Long> entry : distanceStations.entrySet()) {
-            if (matchingStationNumber < Constants.SEARCH_RESULT_MAX_STATIONS_NUMBER) {
-                if (!matchingStations.contains(entry.getKey())) {
-                    matchingStations.add(entry.getKey());
-                    matchingStationNumber++;
-                }
-            } else {
-                // station max number is reached for this location
-                break;
-            }
-        }
-
-        return matchingStations;
+        return true;
     }
 
-    private void displaySearchResult() {
+    private void searchModeDisplayStationsAndRoute() {
+        clearMap();
+        searchModeDisplayRoute(true);
+    }
+
+    private void searchModeDisplayRoute() {
+        searchModeDisplayRoute(false);
+    }
+
+    private void searchModeDisplayRoute(final boolean callDisplayStationsAfter) {
         WSRequest request = new WSRequest(MainActivity.this, Constants.GOOGLE_API_DIRECTIONS_URL);
-        request.withParam(Constants.GOOGLE_API_ORIGIN, searchMapDepartureStation.lat + "," + searchMapDepartureStation.lng);
-        request.withParam(Constants.GOOGLE_API_DESTINATION, searchMapArrivalStation.lat + "," + searchMapArrivalStation.lng);
+        request.withParam(Constants.GOOGLE_API_ORIGIN, searchModeDepartureStation.lat + "," + searchModeDepartureStation.lng);
+        request.withParam(Constants.GOOGLE_API_DESTINATION, searchModeArrivalStation.lat + "," + searchModeArrivalStation.lng);
         request.withParam(Constants.GOOGLE_API_MODE_KEY, Constants.GOOGLE_API_MODE_VALUE);
         request.withParam(Constants.GOOGLE_API_SENSOR, "true");
         request.handleWith(new WSDefaultHandler() {
@@ -1043,45 +1016,24 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                     JSONObject overviewPolylines = routes.optJSONObject("overview_polyline");
                     String encodedString = overviewPolylines.optString("points");
                     List<LatLng> list = Util.decodePoly(encodedString);
-                    // add the location of the departure and arrival stations
-                    list.add(0, searchMapDepartureStation.latLng);
-                    list.add(searchMapArrivalStation.latLng);
+                    // Add the location of the departure and arrival stations
+                    list.add(0, searchModeDepartureStation.latLng);
+                    list.add(searchModeArrivalStation.latLng);
 
                     PolylineOptions options = new PolylineOptions().addAll(list).width(getResources().getDimensionPixelSize(R.dimen.polyline_width)).color(getResources().getColor(R.color.green)).geodesic(true);
-                    if (searchMapPolyline != null) {
-                        searchMapPolyline.remove();
+                    if (searchModePolyline != null) {
+                        searchModePolyline.remove();
                     }
-                    searchMapPolyline = map.addPolyline(options);
-                    //Close form
-                    hideSearchForm();
+                    searchModePolyline = map.addPolyline(options);
 
-                    //Show markers for the first time and set the bounds
-                    LatLngBounds.Builder bld = new LatLngBounds.Builder();
-                    for (Station station : searchMapDepartureStations) {
-                        if (!searchMapMarkersAdded) {
-                            station.searchMarker = map.addMarker(StationMarker.createMarker(MainActivity.this, station));
-                        }
-                        bld.include(station.latLng);
-                    }
-                    for (Station station : searchMapArrivalStations) {
-                        if (!searchMapMarkersAdded) {
-                            station.searchMarker = map.addMarker(StationMarker.createMarker(MainActivity.this, station));
-                        }
-                        bld.include(station.latLng);
+                    // Close view
+                    hideSearchView();
+
+                    if (callDisplayStationsAfter) {
+                        searchModeDisplayStations();
                     }
 
-                    if (!searchMapMarkersAdded) {
-                        departureMarker = map.addMarker(new MarkerOptions().position(departureLocation).title(getString(R.string.departure)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_departure)));
-                        arrivalMarker = map.addMarker(new MarkerOptions().position(arrivalLocation).title(getString(R.string.arrival)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_arrival)));
-                    }
-                    searchMapMarkersAdded = true;
-
-                    //Move camera to show path and stations
-                    bld.include(departureLocation);
-                    bld.include(arrivalLocation);
-                    LatLngBounds bounds = bld.build();
-                    map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, getResources().getDimensionPixelSize(R.dimen.padding_zoom_search_result)));
-
+                    searchModeMoveCameraOnSearchItems();
                 } else {
                     Toast.makeText(MainActivity.this, R.string.ws_google_search_route_fail, Toast.LENGTH_LONG).show();
                 }
@@ -1090,23 +1042,96 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         request.call();
     }
 
-    private long getDistanceInMeters(LatLng point1, LatLng point2) {
-        double lat1 = point1.latitude;
-        double lng1 = point1.longitude;
-        double lat2 = point2.latitude;
-        double lng2 = point2.longitude;
-        double dLat = Math.toRadians(lat2 - lat1);
-        double dLng = Math.toRadians(lng2 - lng1);
-        double radLat1 = Math.toRadians(lat1);
-        double radLat2 = Math.toRadians(lat2);
+    private void searchModeDisplayStations() {
+        for (Station station : searchModeDepartureStations) {
+            if (station.searchMarker != null) {
+                station.searchMarker.remove();
+            }
+            station.searchMarker = map.addMarker(StationMarker.createMarker(MainActivity.this, station));
+        }
+        for (Station station : searchModeArrivalStations) {
+            if (station.searchMarker != null) {
+                station.searchMarker.remove();
+            }
+            station.searchMarker = map.addMarker(StationMarker.createMarker(MainActivity.this, station));
+        }
 
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.sin(dLng / 2) * Math.sin(dLng / 2) * Math.cos(radLat1) * Math.cos(radLat2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return (long) (Constants.EARTH_RADIUS * c);
+        map.addMarker(new MarkerOptions().position(departureLocation).title(getString(R.string.departure)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_departure)));
+        map.addMarker(new MarkerOptions().position(arrivalLocation).title(getString(R.string.arrival)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_arrival)));
     }
 
-    public LocationClient getLocationClient() {
-        return locationClient;
+    private void searchModeMoveCameraOnSearchItems() {
+        LatLngBounds.Builder bld = new LatLngBounds.Builder();
+        for (Station station : searchModeDepartureStations) {
+            bld.include(station.latLng);
+        }
+        for (Station station : searchModeArrivalStations) {
+            bld.include(station.latLng);
+        }
+
+        bld.include(departureLocation);
+        bld.include(arrivalLocation);
+        LatLngBounds bounds = bld.build();
+        map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, getResources().getDimensionPixelSize(R.dimen.padding_zoom_search_result)));
     }
 
+    private ArrayList<Station> getStationsNearLocation(LatLng startLocation, LatLng finishLocation, int bikesNumber, int fieldId) {
+        int matchingStationNumber = 0;
+        LatLng location;
+        ArrayList<Station> matchingStations = new ArrayList<Station>();
+
+        if (fieldId == FIELD_DEPARTURE) {
+            location = startLocation;
+        } else {
+            location = finishLocation;
+        }
+
+        long radiusDist = Util.getDistanceInMeters(startLocation, finishLocation) / 2;
+        if (radiusDist > Constants.STATION_SEARCH_MAX_RADIUS_IN_METERS) {
+            radiusDist = Constants.STATION_SEARCH_MAX_RADIUS_IN_METERS;
+        }
+        if (radiusDist < Constants.STATION_SEARCH_MIN_RADIUS_IN_METERS) {
+            radiusDist = Constants.STATION_SEARCH_MIN_RADIUS_IN_METERS;
+        }
+
+        Log.e(Util.getDistanceInMeters(startLocation, finishLocation) + "");
+        Log.e(radiusDist + "");
+
+        Map<Station, Long> distanceStations = new HashMap<Station, Long>();
+        // Find all stations distance for a radius
+        synchronized (stations) {
+            for (Station station : stations) {
+                if (!Double.isNaN(station.lat) && !Double.isNaN(station.lng)) {
+                    Long distance = Long.valueOf(Util.getDistanceInMeters(location, station.latLng));
+                    if (distance.longValue() <= radiusDist) {
+                        if (fieldId == FIELD_DEPARTURE) {
+                            if (station.availableBikes >= bikesNumber) {
+                                distanceStations.put(station, distance);
+                            }
+                        } else {
+                            if (station.availableBikeStands >= bikesNumber) {
+                                distanceStations.put(station, distance);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Sort station by distance and get the first SEARCH_RESULT_MAX_STATIONS_NUMBER stations
+        distanceStations = Util.sortMapByValues(distanceStations);
+        for (Map.Entry<Station, Long> entry : distanceStations.entrySet()) {
+            if (matchingStationNumber < Constants.SEARCH_RESULT_MAX_STATIONS_NUMBER) {
+                if (!matchingStations.contains(entry.getKey())) {
+                    matchingStations.add(entry.getKey());
+                    matchingStationNumber++;
+                }
+            } else {
+                // Station max number is reached for this location
+                break;
+            }
+        }
+
+        return matchingStations;
+    }
 }
