@@ -2,4 +2,5 @@
 <resources>
     <color name="green">#B1C700</color>
     <color name="green_pressed_focused">#96AC00</color>
+    <color name="green_disabled">#A4AC71</color>
 </resources>

@@ -1,42 +1,17 @@
 package com.onelightstudio.velibnroses;
 
-import android.app.Application;
 import android.content.Context;
-import android.location.Address;
-import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Filter;
 import android.widget.Filterable;
-import android.widget.ProgressBar;
-import android.widget.Toast;
 
 import com.google.android.gms.location.LocationClient;
-import com.google.android.gms.maps.model.LatLng;
-import com.onelightstudio.velibnroses.model.Station;
-import com.onelightstudio.velibnroses.ws.WSDefaultHandler;
 import com.onelightstudio.velibnroses.ws.WSRequest;
-import com.onelightstudio.velibnroses.ws.WSSilentHandler;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.StatusLine;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpResponseException;
-import org.apache.http.client.ResponseHandler;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.params.BasicHttpParams;
-import org.apache.http.params.HttpConnectionParams;
-import org.apache.http.params.HttpParams;
-import org.apache.http.protocol.HTTP;
-import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Locale;
 
 class AddressAdapter extends ArrayAdapter<String> implements Filterable {
 
@@ -115,7 +90,7 @@ class AddressAdapter extends ArrayAdapter<String> implements Filterable {
             request.withParam(Constants.GOOGLE_API_SENSOR, "false");
         }
 
-        JSONObject result = request.wsRequestGetSimple();
+        JSONObject result = request.wsRequestGet();
 
         JSONArray predictions = (JSONArray) result.opt("predictions");
         if (predictions != null && predictions.length() > 0) {

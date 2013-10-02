@@ -25,6 +25,9 @@
 
     <style name="Theme.OneBike.SearchView" parent="@style/Theme.OneBike">
         <item name="android:background">@android:color/black</item>
+    </style>
+
+    <style name="Theme.OneBike.SearchView.Form" parent="@style/Theme.OneBike">
         <item name="android:paddingRight">12dp</item>
         <item name="android:paddingLeft">12dp</item>
         <item name="android:paddingTop">12dp</item>

@@ -9,21 +9,26 @@ import android.widget.Toast;
 import com.onelightstudio.velibnroses.R;
 
 public abstract class WSDefaultHandler implements WSHandler {
+    private boolean executeInBackground;
+
+    public WSDefaultHandler(boolean executeInBackground) {
+        this.executeInBackground = executeInBackground;
+    }
 
     public void doAfter(Context context) {
-        if (context instanceof Activity) {
+        if (context instanceof Activity && executeInBackground == false) {
             ((Activity) context).setProgressBarIndeterminateVisibility(false);
         }
     }
 
     public void doBefore(Context context) {
-        if (context instanceof Activity) {
+        if (context instanceof Activity && executeInBackground == false) {
             ((Activity) context).setProgressBarIndeterminateVisibility(true);
         }
     }
 
     public void onCancelled(Context context) {
-        if (context instanceof Activity) {
+        if (context instanceof Activity && executeInBackground == false) {
             ((Activity) context).setProgressBarIndeterminateVisibility(true);
         }
     }

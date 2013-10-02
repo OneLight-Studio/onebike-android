@@ -6,7 +6,8 @@ public interface Constants {
     public static final int MAP_DEFAULT_NO_LOCATION_ZOOM = 12;
     public static final int MAP_DEFAULT_USER_ZOOM = 15;
     public static final int MAP_ANIMATE_TIME = 500;
-    public static final int MAP_TIMER_REFRESH_IN_MILLISECONDES = 300000;
+    //public static final int MAP_TIMER_REFRESH_IN_MILLISECONDES = 300000;
+    public static final int MAP_TIMER_REFRESH_IN_MILLISECONDES = 15000;
 
     public static final int SEARCH_RESULT_MAX_STATIONS_NUMBER = 3;
     public static final int STATION_SEARCH_MAX_RADIUS_IN_METERS = 5000;
@@ -36,6 +37,7 @@ public interface Constants {
 
     public static final String JCD_URL = "https://api.jcdecaux.com/vls/v1/stations";
     public static final String JCD_API_KEY = "apiKey";
+    public static final String JCD_CONTRACT = "contract";
     public static final String JCD_APP_API_KEY = "JCDecaux_API";
     public static final String JCD_NUMBER_KEY = "number";
     public static final String JCD_NAME_KEY = "name";
@@ -51,4 +53,5 @@ public interface Constants {
     public static final String JCD_AVAILABLE_BIKE_STANDS_KEY = "available_bike_stands";
     public static final String JCD_AVAILABLE_BIKE_KEY = "available_bikes";
     public static final String JCD_LAST_UPDATE_KEY = "last_update";
+    public static final String JCD_DEFAULT_CONTRACT_KEY = "Toulouse";
 }
