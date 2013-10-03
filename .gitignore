@@ -1,4 +1,5 @@
 .DS_Store
+*.apk
 src/OneBike/local.properties
 src/OneBike/.idea/
 src/OneBike/.gradle/
