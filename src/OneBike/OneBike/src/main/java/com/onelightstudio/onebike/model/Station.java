@@ -1,9 +1,9 @@
-package com.onelightstudio.velibnroses.model;
+package com.onelightstudio.onebike.model;
 
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.onelightstudio.velibnroses.Constants;
+import com.onelightstudio.onebike.Constants;
 
 import org.json.JSONObject;
 

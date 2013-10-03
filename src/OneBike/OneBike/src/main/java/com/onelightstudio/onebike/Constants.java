@@ -1,4 +1,4 @@
-package com.onelightstudio.velibnroses;
+package com.onelightstudio.onebike;
 
 public interface Constants {
     public static final Integer EARTH_RADIUS = 6371000;

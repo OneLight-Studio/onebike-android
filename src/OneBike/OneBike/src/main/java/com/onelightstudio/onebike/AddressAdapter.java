@@ -1,4 +1,4 @@
-package com.onelightstudio.velibnroses;
+package com.onelightstudio.onebike;
 
 import android.content.Context;
 import android.widget.ArrayAdapter;
@@ -6,7 +6,7 @@ import android.widget.Filter;
 import android.widget.Filterable;
 
 import com.google.android.gms.location.LocationClient;
-import com.onelightstudio.velibnroses.ws.WSRequest;
+import com.onelightstudio.onebike.ws.WSRequest;
 
 import org.json.JSONArray;
 import org.json.JSONObject;

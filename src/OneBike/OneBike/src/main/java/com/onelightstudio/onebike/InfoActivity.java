@@ -1,9 +1,7 @@
-package com.onelightstudio.velibnroses;
+package com.onelightstudio.onebike;
 
 import android.os.Bundle;
 import android.app.Activity;
-import android.view.Menu;
-import android.view.MenuItem;
 
 public class InfoActivity extends Activity {
 

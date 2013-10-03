@@ -1,4 +1,4 @@
-package com.onelightstudio.velibnroses.model;
+package com.onelightstudio.onebike.model;
 
 import android.content.Context;
 import android.content.res.Resources;
@@ -8,13 +8,12 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
-import android.util.DisplayMetrics;
 
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.onelightstudio.velibnroses.R;
+import com.onelightstudio.onebike.R;
 
 /**
  * Created by thomas on 12/09/13.
