@@ -44,4 +44,11 @@ public class Station {
         lng = pos.optDouble(Constants.JCD_LNG_KEY);
         latLng = new LatLng(lat, lng);
     }
+
+    public void updateDynamicDatasWithStation(Station station) {
+        status = station.status;
+        availableBikeStands = station.availableBikeStands;
+        availableBikes = station.availableBikes;
+        lastUpdate = station.lastUpdate;
+    }
 }

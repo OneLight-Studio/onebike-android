@@ -56,7 +56,7 @@ public class WSRequest extends AsyncTask<Void, Void, JSONObject> {
         this.context = context;
         this.resource = resource;
         params = new ArrayList<NameValuePair>();
-        handler = new WSDefaultHandler() {
+        handler = new WSDefaultHandler(true) {
             @Override
             public void onResult(Context context, JSONObject result) {
             }
