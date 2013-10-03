@@ -1,4 +1,4 @@
-package com.onelightstudio.velibnroses;
+package com.onelightstudio.onebike;
 
 import android.content.Context;
 import android.content.Intent;
@@ -40,10 +40,10 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
-import com.onelightstudio.velibnroses.model.Station;
-import com.onelightstudio.velibnroses.model.StationMarker;
-import com.onelightstudio.velibnroses.ws.WSDefaultHandler;
-import com.onelightstudio.velibnroses.ws.WSRequest;
+import com.onelightstudio.onebike.model.Station;
+import com.onelightstudio.onebike.model.StationMarker;
+import com.onelightstudio.onebike.ws.WSDefaultHandler;
+import com.onelightstudio.onebike.ws.WSRequest;
 
 import org.json.JSONArray;
 import org.json.JSONObject;

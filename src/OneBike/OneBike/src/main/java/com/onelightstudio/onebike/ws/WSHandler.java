@@ -1,4 +1,4 @@
-package com.onelightstudio.velibnroses.ws;
+package com.onelightstudio.onebike.ws;
 
 import android.content.Context;
 

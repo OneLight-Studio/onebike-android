@@ -1,4 +1,4 @@
-package com.onelightstudio.velibnroses;
+package com.onelightstudio.onebike;
 
 import android.app.Application;
 import android.widget.Toast;

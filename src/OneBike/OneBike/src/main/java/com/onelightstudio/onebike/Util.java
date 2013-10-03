@@ -1,9 +1,8 @@
-package com.onelightstudio.velibnroses;
+package com.onelightstudio.onebike;
 
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.util.DisplayMetrics;
 
 import com.google.android.gms.maps.model.LatLng;
 

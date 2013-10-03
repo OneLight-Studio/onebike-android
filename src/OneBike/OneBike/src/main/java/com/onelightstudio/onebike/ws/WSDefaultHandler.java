@@ -1,12 +1,7 @@
-package com.onelightstudio.velibnroses.ws;
-
-import org.json.JSONObject;
+package com.onelightstudio.onebike.ws;
 
 import android.app.Activity;
 import android.content.Context;
-import android.widget.Toast;
-
-import com.onelightstudio.velibnroses.R;
 
 public abstract class WSDefaultHandler implements WSHandler {
     private boolean executeInBackground;
