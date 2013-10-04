@@ -43,12 +43,19 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:screenOrientation="portrait"
+            android:name="com.onelightstudio.onebike.InfoActivity"></activity>
 
+        <!-- Development Key -->
+        <!-- <meta-data
+            android:name="com.google.android.maps.v2.API_KEY"
+            android:value="AIzaSyDgKRier12bPPknXhPRvuAvPdNn3vFQbW8" /> -->
+
+        <!-- Production Key -->
         <meta-data
             android:name="com.google.android.maps.v2.API_KEY"
             android:value="AIzaSyD2Gwnud-X9UIxrfZzLmhCd-bmxyEtJzzk" />
-
-        <activity android:name="com.onelightstudio.onebike.InfoActivity"></activity>
     </application>
 
 </manifest>

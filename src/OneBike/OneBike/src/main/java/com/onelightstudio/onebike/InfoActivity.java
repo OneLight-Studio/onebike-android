@@ -1,5 +1,6 @@
 package com.onelightstudio.onebike;
 
+import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.app.Activity;
 
