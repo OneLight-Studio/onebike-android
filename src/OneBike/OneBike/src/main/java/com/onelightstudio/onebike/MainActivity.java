@@ -148,6 +148,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private Station searchModeArrivalStation;
     private Polyline searchModePolyline;
     private ArrayList<Marker> normalModeCurrentMarkers;
+    private HashMap<Marker, LatLngBounds> normalModeClusterBounds;
 
 
     //----------------------------------------------------------------
@@ -192,7 +193,6 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         };
         timer = new Handler();
 
-
         // Init view and elements
         searchView = findViewById(R.id.search_view);
         mapView = findViewById(R.id.map_view);
@@ -214,7 +214,6 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 return swipeClickDetector.onTouchEvent(event);
             }
         });
-
 
         departureField.addTextChangedListener(new TextWatcher() {
             @Override
@@ -249,7 +248,6 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             return false;
             }
         });
-
 
         departureBikesField.setOnKeyListener(new View.OnKeyListener() {
 
@@ -521,7 +519,12 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                                 searchModeDisplayRoute();
                             }
                         } else {
-                            marker.showInfoWindow();
+                            LatLngBounds bounds = normalModeClusterBounds.get(marker);
+                            if (bounds != null) {
+                                map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, getResources().getDimensionPixelSize(R.dimen.padding_zoom_cluster)));
+                            } else {
+                                marker.showInfoWindow();
+                            }
                         }
 
                         return true;
@@ -749,7 +752,6 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             private LatLngBounds bounds;
             private float zoomLevel;
             private float maxZoomLevel;
-            private HashMap<Marker, LatLngBounds> clusterBounds;
 
             @Override
             protected void onPreExecute() {
@@ -775,7 +777,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 }
 
                 // Create the markers, clustering if needed
-                clusterBounds = new HashMap<Marker, LatLngBounds>();
+                normalModeClusterBounds = new HashMap<Marker, LatLngBounds>();
                 HashMap<MarkerOptions, LatLngBounds> markers = new HashMap<MarkerOptions, LatLngBounds>();
                 ArrayList<Station> unprocessedStations = (ArrayList<Station>) stationsInViewport.clone();
                 for (Station station : stationsInViewport) {
@@ -821,7 +823,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                     tmpAddedMarkers.add(marker);
 
                     if (markerEntry.getValue() != null) {
-                        clusterBounds.put(marker, markerEntry.getValue());
+                        normalModeClusterBounds.put(marker, markerEntry.getValue());
                     }
                 }
 

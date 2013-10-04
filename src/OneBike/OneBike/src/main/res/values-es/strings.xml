@@ -2,20 +2,20 @@
 <resources>
     <string name="app_name">OneBike</string>
     <string name="error_init">La aplicación no se ha cargado</string>
-    <string name="error_google_play_service">Gracias comprueba su Google Play Services install</string>
+    <string name="error_google_play_service">Por favor comprueba su Google Play Services instalación</string>
     <string name="departure">Inicio</string>
-    <string name="arrival">Salida</string>
-    <string name="address_not_found">No encontramos esta dirección</string>
-    <string name="location_unavailable">No encontramos esta dirección</string>
-    <string name="location_not_shared">Esta aplicación requiere de geolocalización, gracias a la activa</string>
-    <string name="internet_not_available">OneBike requiere una conexión a Internet para que funcione</string>
-    <string name="ws_stations_not_availabel">Es imposible cargar estaciones</string>
-    <string name="ws_google_search_route_fail">Es imposible ofrecer una ruta para esta búsqueda</string>
-    <string name="search">Búsqueda</string>
-    <string name="close_search">Cierra la búsqueda</string>
+    <string name="arrival">Destino</string>
+    <string name="address_not_found">No hemos encontrado su dirección</string>
+    <string name="location_unavailable">No hemos encontrado su dirección</string>
+    <string name="location_not_shared">Esta aplicación necessita que la geolocalización sea activada</string>
+    <string name="internet_not_available">OneBike necessita una conexión a Internet</string>
+    <string name="ws_stations_not_availabel">Es imposible cargar las estaciones</string>
+    <string name="ws_google_search_route_fail">Es imposible ofrecerle una ruta para esta búsqueda</string>
+    <string name="search">Búscar</string>
+    <string name="close_search">Cerrar la búsqueda</string>
     <string name="departure_unavailable">Gracias por completar el inicio</string>
-    <string name="arrival_unavailable">Gracias por completar la salida</string>
-    <string name="stations_not_available">Estaciones no están cargados, gracias intenta nuevamente en un momento</string>
-    <string name="path_impossible">Es impossible presentar un camino para esta dirección</string>
+    <string name="arrival_unavailable">Gracias por completar el destino</string>
+    <string name="stations_not_available">Las estaciones no están cargadas, gracias por intentar de nuevo en un momento</string>
+    <string name="path_impossible">No hemos encontrado un camino hasta esta dirección</string>
     <string name="info">Info</string>
 </resources>

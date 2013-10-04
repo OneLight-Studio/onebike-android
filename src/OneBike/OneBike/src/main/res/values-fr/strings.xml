@@ -2,16 +2,16 @@
 <resources>
     <string name="app_name">OneBike</string>
     <string name="error_init">L\'application n\'a pas pu s\'initialiser</string>
-    <string name="error_google_play_service">Merci de vérifier votre Google Play Service</string>
+    <string name="error_google_play_service">Merci de vérifier votre installation Google Play Services</string>
     <string name="departure">Départ</string>
     <string name="arrival">Arrivée</string>
     <string name="address_not_found">Nous ne trouvons pas votre adresse</string>
     <string name="location_unavailable">Nous ne trouvons pas votre adresse</string>
     <string name="location_not_shared">Pour bénéficier de toutes les fonctionnalités de OneBike, merci d\'activer la géolocalisation</string>
-    <string name="internet_not_available">OneBike nécessite une connexion Internet</string>
+    <string name="internet_not_available">OneBike nécessite une connexion internet</string>
     <string name="ws_stations_not_availabel">Il est impossible de charger les stations</string>
     <string name="ws_google_search_route_fail">Il est impossible de rechercher un trajet</string>
-    <string name="search">Recherche</string>
+    <string name="search">Rechercher</string>
     <string name="close_search">Fermer la recherche</string>
     <string name="departure_unavailable">Veuillez entrer votre point de départ</string>
     <string name="arrival_unavailable">Veuillez entrer votre point d\'arrivée</string>

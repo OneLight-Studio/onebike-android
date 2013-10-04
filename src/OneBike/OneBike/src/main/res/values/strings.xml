@@ -15,7 +15,7 @@
     <string name="close_search">Close current search</string>
     <string name="departure_unavailable">Please fill the departure</string>
     <string name="arrival_unavailable">Please fill the arrival</string>
-    <string name="stations_not_available">Stations not yet loaded, please retry in seconds</string>
+    <string name="stations_not_available">Stations not loaded yet, please retry in seconds</string>
     <string name="path_impossible">Cannot show a route for these address</string>
     <string name="info">Info</string>
 </resources>
