@@ -46,7 +46,6 @@ class AddressAdapter extends ArrayAdapter<String> implements Filterable {
                         resultList = autocomplete(constraint.toString());
                     } else {
                         resultList = new ArrayList<String>();
-
                     }
 
                     // Assign the data to the FilterResults
@@ -71,7 +70,7 @@ class AddressAdapter extends ArrayAdapter<String> implements Filterable {
     private ArrayList<String> autocomplete(String input) {
         ArrayList<String> autoCompleteResult = new ArrayList<String>();
 
-        Log.d("Start autocomplete");
+        Log.i("Start autocomplete");
         WSRequest request = new WSRequest(this.getContext(), Constants.GOOGLE_API_AUTOCOMPLETE_URL);
         request.withParam(Constants.GOOGLE_API_KEY, (((App)((MainActivity)this.getContext()).getApplication()).getApiKey(Constants.GOOGLE_APP_API_KEY)));
         request.withParam(Constants.GOOGLE_API_INPUT, input);
@@ -104,7 +103,7 @@ class AddressAdapter extends ArrayAdapter<String> implements Filterable {
             }
         }
 
-        Log.d("End autocomplete");
+        Log.i("End autocomplete");
 
         return autoCompleteResult;
     }

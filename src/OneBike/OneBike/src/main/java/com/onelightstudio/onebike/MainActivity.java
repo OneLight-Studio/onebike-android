@@ -178,7 +178,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
             @Override
             public void run() {
-                Log.e("Refresh Map Tick");
+                Log.i("Refresh Map Tick");
 
                 boolean stationsIsEmpty = false;
                 synchronized (stations) {
@@ -324,7 +324,33 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
             @Override
             public void afterTextChanged(Editable editable) {
-                arrivalStandsField.setText(editable.toString());
+                if (!editable.toString().isEmpty()) {
+                    if(Integer.valueOf(editable.toString()) == 0) {
+                        departureBikesField.setText("1");
+                        arrivalStandsField.setText("1");
+                    } else {
+                        arrivalStandsField.setText(editable.toString());
+                    }
+                }
+            }
+        });
+
+        arrivalStandsField.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+                // Nothing
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+                // Nothing
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                if (!editable.toString().isEmpty() && Integer.valueOf(editable.toString()) == 0) {
+                    arrivalStandsField.setText("1");
+                }
             }
         });
 
@@ -632,9 +658,6 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private void loadStations(final boolean executeInBackground, final String contract) {
         loadStationsTry++;
 
-        if(contract != null) {
-            Log.e(contract);
-        }
         if (!loadingStations) {
             loadingStations = true;
             WSRequest request = new WSRequest(this, Constants.JCD_URL);
@@ -861,6 +884,13 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
     private void quitSearchMode() {
         searchMode = false;
+
+        //Reset fields
+        departureField.setText("");
+        arrivalField.setText("");
+        departureBikesField.setText("1");
+        arrivalStandsField.setText("1");
+
         actionClearSearchMenuItem.setVisible(false);
         clearMap();
         displayStations();
@@ -1052,7 +1082,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     }
 
     private void searchModeUpdateStations() {
-        Log.e("Update the displayed markers");
+        Log.i("Update the displayed markers");
 
         boolean doASearch = false;
 

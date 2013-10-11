@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.onelightstudio.onebike"
-    android:versionCode="2"
+    android:versionCode="3"
     android:versionName="1.0">
 
     <permission
@@ -43,12 +43,19 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:screenOrientation="portrait"
+            android:name="com.onelightstudio.onebike.InfoActivity"></activity>
 
+        <!-- Development Key -->
+        <!-- <meta-data
+            android:name="com.google.android.maps.v2.API_KEY"
+            android:value="AIzaSyDgKRier12bPPknXhPRvuAvPdNn3vFQbW8" /> -->
+
+        <!-- Production Key -->
         <meta-data
             android:name="com.google.android.maps.v2.API_KEY"
             android:value="AIzaSyD2Gwnud-X9UIxrfZzLmhCd-bmxyEtJzzk" />
-
-        <activity android:name="com.onelightstudio.onebike.InfoActivity"></activity>
     </application>
 
 </manifest>
