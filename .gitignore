@@ -1,2 +1,9 @@
-src/VelibNRoses/local.properties
-src/VelibNRoses/VelibNRoses/build
+.DS_Store
+*.apk
+src/OneBike/local.properties
+src/OneBike/.idea/
+src/OneBike/.gradle/
+src/OneBike/OneBike/build/
+src/OneBike/OneBike.iml
+src/OneBike/OneBike/OneBike-OneBike.iml
+src/OneBike/OneBike/src/main/res/raw/api_keys.properties

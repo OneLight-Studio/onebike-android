@@ -1,0 +1,284 @@
+
+
+    [
+       {
+           "name": "Rouen",
+           "cities":
+           [
+               "Rouen"
+           ],
+           "commercial_name": "cy'clic",
+           "country_code": "FR"
+       },
+       {
+           "name": "Paris",
+           "cities":
+           [
+               "Arcueil",
+               "Aubervilliers",
+               "Bagnolet",
+               "Boulogne Billancourt",
+               "Charenton",
+               "Clichy",
+               "Fontenay-sous-Bois",
+               "Gentilly",
+               "Issy les Moulineaux",
+               "Ivry",
+               "Joinville",
+               "Le Kremlin Bicêtre",
+               "Le Pré St Gervais",
+               "Les Lilas",
+               "Levallois-Perret",
+               "Malakoff",
+               "Montreuil",
+               "Montrouge",
+               "Neuilly",
+               "Nogent",
+               "Pantin",
+               "Paris",
+               "Puteaux",
+               "Saint Cloud",
+               "Saint Denis",
+               "Saint Mandé",
+               "Saint Maurice",
+               "Saint Ouen",
+               "Suresnes",
+               "Vanves",
+               "Vincennes"
+           ],
+           "commercial_name": "Velib",
+           "country_code": "FR"
+       },
+       {
+           "name": "Toulouse",
+           "cities":
+           [
+               "Toulouse"
+           ],
+           "commercial_name": "Vélô",
+           "country_code": "FR"
+       },
+       {
+           "name": "Luxembourg",
+           "cities":
+           [
+               "Luxembourg"
+           ],
+           "commercial_name": "Veloh",
+           "country_code": "LU"
+       },
+       {
+           "name": "Valence",
+           "cities":
+           [
+               "Valencia"
+           ],
+           "commercial_name": "Valenbisi",
+           "country_code": "ES"
+       },
+       {
+           "name": "Stockholm",
+           "cities":
+           [
+               "Stockholm"
+           ],
+           "commercial_name": "Cyclocity",
+           "country_code": "SE"
+       },
+       {
+           "name": "Goteborg",
+           "cities":
+           [
+               "Göteborg"
+           ],
+           "commercial_name": "Göteborg",
+           "country_code": "SE"
+       },
+       {
+           "name": "Santander",
+           "cities":
+           [
+               "Santander"
+           ],
+           "commercial_name": "Tusbic",
+           "country_code": "ES"
+       },
+       {
+           "name": "Amiens",
+           "cities":
+           [
+               "Amiens"
+           ],
+           "commercial_name": "Velam",
+           "country_code": "FR"
+       },
+       {
+           "name": "Lillestrom",
+           "cities":
+           [
+               "Lillestrom"
+           ],
+           "commercial_name": "Bysykkel",
+           "country_code": "NO"
+       },
+       {
+           "name": "Mulhouse",
+           "cities":
+           [
+               "Mulhouse"
+           ],
+           "commercial_name": "VéloCité",
+           "country_code": "FR"
+       },
+       {
+           "name": "Lyon",
+           "cities":
+           [
+               "Caluire-et-Cuire",
+               "Lyon",
+               "Vaulx-En-Velin",
+               "Villeurbanne"
+           ],
+           "commercial_name": "Vélo'V",
+           "country_code": "FR"
+       },
+       {
+           "name": "Ljubljana",
+           "cities":
+           [
+               "Ljubljana"
+           ],
+           "commercial_name": "Bicikelj ",
+           "country_code": "SI"
+       },
+       {
+           "name": "Seville",
+           "cities":
+           [
+               "Sevillia"
+           ],
+           "commercial_name": "SEVICI",
+           "country_code": "ES"
+       },
+       {
+           "name": "Namur",
+           "cities":
+           [
+               "Namur"
+           ],
+           "commercial_name": "Li bia velo",
+           "country_code": "BE"
+       },
+       {
+           "name": "Nancy",
+           "cities":
+           [
+               "Nancy"
+           ],
+           "commercial_name": "vélOstan'lib",
+           "country_code": "FR"
+       },
+       {
+           "name": "Creteil",
+           "cities":
+           [
+               "Créteil"
+           ],
+           "commercial_name": "Cristolib",
+           "country_code": "FR"
+       },
+       {
+           "name": "Bruxelles-Capitale",
+           "cities":
+           [
+               "Anderlecht",
+               "Berchem-Sainte-Agathe",
+               "Bruxelles",
+               "Etterbeek",
+               "Forest",
+               "Ganshoren",
+               "Ixelles",
+               "Jette",
+               "Koekelberg",
+               "Molenbeek-Saint-Jean",
+               "Saint-Gilles",
+               "Saint-Josse-ten-noode",
+               "Schaerbeek",
+               "Uccle",
+               "Woluwe-Saint-Lambert",
+               "Woluwe-Saint-Pierre"
+           ],
+           "commercial_name": "villo",
+           "country_code": "BE"
+       },
+       {
+           "name": "Cergy-Pontoise",
+           "cities":
+           [
+               "Cergy",
+               "Courdimanche",
+               "Eragny-sur-Oise",
+               "Neuville-sur-Oise",
+               "Pontoise",
+               "Saint-Ouen-L'Aumone",
+               "Vauréal"
+           ],
+           "commercial_name": "Velo2",
+           "country_code": "FR"
+       },
+       {
+           "name": "Vilnius",
+           "cities":
+           [
+               "Vilnius"
+           ],
+           "commercial_name": "Cyclocity",
+           "country_code": "LT"
+       },
+       {
+           "name": "Toyama",
+           "cities":
+           [
+               "Toyama"
+           ],
+           "commercial_name": "cyclocity",
+           "country_code": "JP"
+       },
+       {
+           "name": "Kazan",
+           "cities":
+           [
+               "Kazan"
+           ],
+           "commercial_name": "Veli'k",
+           "country_code": "RU"
+       },
+       {
+           "name": "Marseille",
+           "cities":
+           [
+               "Marseille"
+           ],
+           "commercial_name": "Le vélo",
+           "country_code": "FR"
+       },
+       {
+           "name": "Nantes",
+           "cities":
+           [
+               "Nantes"
+           ],
+           "commercial_name": "Bicloo",
+           "country_code": "FR"
+       },
+       {
+           "name": "Besancon",
+           "cities":
+           [
+               "Besançon"
+           ],
+           "commercial_name": "VéloCité",
+           "country_code": "FR"
+       }
+    ]
+

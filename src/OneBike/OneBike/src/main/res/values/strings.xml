@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OneBike</string>
+    <string name="error_init">Uh oh, failed to init the application</string>
+    <string name="error_google_play_service">Please check your Google Play Services install</string>
+    <string name="departure">Departure</string>
+    <string name="arrival">Arrival</string>
+    <string name="address_not_found">Cannot find your address</string>
+    <string name="location_unavailable">Cannot find your address</string>
+    <string name="location_not_shared">For a better experience with OneBike, please share your current position</string>
+    <string name="internet_not_available">OneBike needs an Internet connection to work</string>
+    <string name="ws_stations_not_availabel">Cannot load stations</string>
+    <string name="ws_google_search_route_fail">Cannot show a route for this search</string>
+    <string name="search">Search</string>
+    <string name="close_search">Close current search</string>
+    <string name="departure_unavailable">Please fill the departure</string>
+    <string name="arrival_unavailable">Please fill the arrival</string>
+    <string name="stations_not_available">Stations not loaded yet, please retry in seconds</string>
+    <string name="path_impossible">Cannot show a route for these address</string>
+    <string name="info">Info</string>
+</resources>
+
