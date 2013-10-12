@@ -18,4 +18,9 @@
     <string name="stations_not_available">Las estaciones no están cargadas, gracias por intentar de nuevo en un momento</string>
     <string name="path_impossible">No hemos encontrado un camino hasta esta dirección</string>
     <string name="info">Info</string>
+    <string name="rate_title">Calificar OneBike</string>
+    <string name="rate_message">¡ Gracias por utilizar OneBike ! Si le gusta esta aplicación, tome un momento para calificarla :-) ¡ Gracias por su apoyo !</string>
+    <string name="rate_yes">Calificar</string>
+    <string name="rate_no">No gracias</string>
+    <string name="rate_later">Más tarde</string>
 </resources>
