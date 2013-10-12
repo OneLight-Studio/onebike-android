@@ -13,9 +13,6 @@ import android.net.Uri;
  */
 public class AppRater {
 
-    private final static int DAYS_UNTIL_PROMPT = 0;
-    private final static int LAUNCHES_UNTIL_PROMPT = 0;
-
     /**
      * Call this method at the end of your OnCreate method to determine whether to show the rate prompt
      */
@@ -39,8 +36,8 @@ public class AppRater {
         }
 
         // Wait for at least the number of launches and the number of days used until prompt
-        if (launch_count >= LAUNCHES_UNTIL_PROMPT) {
-            if (System.currentTimeMillis() >= date_firstLaunch + (DAYS_UNTIL_PROMPT * 24 * 60 * 60 * 1000)) {
+        if (launch_count >= Constants.RATING_LAUNCHES_UNTIL_PROMPT) {
+            if (System.currentTimeMillis() >= date_firstLaunch + (Constants.RATING_DAYS_UNTIL_PROMPT * 24 * 60 * 60 * 1000)) {
                 showRateAlertDialog(context, editor);
             }
         }
