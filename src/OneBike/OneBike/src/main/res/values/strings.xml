@@ -18,5 +18,9 @@
     <string name="stations_not_available">Stations not loaded yet, please retry in seconds</string>
     <string name="path_impossible">Cannot show a route for these address</string>
     <string name="info">Info</string>
+    <string name="hours">hours</string>
+    <string name="hour">hour</string>
+    <string name="minutes">mins</string>
+    <string name="minute">min</string>
 </resources>
 

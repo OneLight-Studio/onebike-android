@@ -18,4 +18,8 @@
     <string name="stations_not_available">Las estaciones no están cargadas, gracias por intentar de nuevo en un momento</string>
     <string name="path_impossible">No hemos encontrado un camino hasta esta dirección</string>
     <string name="info">Info</string>
+    <string name="hours">horas</string>
+    <string name="hour">hora</string>
+    <string name="minutes">mins</string>
+    <string name="minute">min</string>
 </resources>

@@ -54,6 +54,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 
 public class MainActivity extends FragmentActivity implements GooglePlayServicesClient.ConnectionCallbacks, GooglePlayServicesClient.OnConnectionFailedListener, View.OnClickListener {
@@ -1170,8 +1171,26 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                     JSONObject leg = legs.optJSONObject(0);
                     JSONObject overviewPolylines = route.optJSONObject("overview_polyline");
                     String encodedString = overviewPolylines.optString("points");
-                    String duration = leg.optJSONObject("duration").optString("text");
                     String distance = leg.optJSONObject("distance").optString("text");
+                    long seconds = leg.optJSONObject("duration").optLong("value") / 2;  // we've asked for a walking route
+                    long hours = TimeUnit.SECONDS.toHours(seconds);
+                    long minutes = TimeUnit.SECONDS.toMinutes(seconds) - TimeUnit.HOURS.toMinutes(hours);
+                    String duration = "";
+                    if (hours > 1) {
+                        duration += hours + " " + getString(R.string.hours);
+                    } else if (hours > 0) {
+                        duration += hours + " " + getString(R.string.hour);
+                    }
+                    if (minutes > 0) {
+                        if (!duration.isEmpty()) {
+                            duration += " ";
+                        }
+                        if (minutes > 1) {
+                            duration += minutes + " " + getString(R.string.minutes);
+                        } else {
+                            duration += minutes + " " + getString(R.string.minute);
+                        }
+                    }
 
                     searchInfoDuration.setText(duration);
                     searchInfoDistance.setText(distance);
