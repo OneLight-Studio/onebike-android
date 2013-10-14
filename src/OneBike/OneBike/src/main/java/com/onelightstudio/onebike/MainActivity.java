@@ -107,7 +107,8 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
     private static final int FIELD_DEPARTURE = 0;
     private static final int FIELD_ARRIVAL = 1;
-    private final static String FORCE_CAMERA_POSITION = "ForceCameraPosition";
+    private static final String FORCE_CAMERA_POSITION = "ForceCameraPosition";
+    private static final String TEST_STATION_NAME = "TEST EDOS";
 
     private GoogleMap map;
     private boolean forceCameraPosition;
@@ -726,7 +727,9 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                         stations.clear();
                         for (int i = 0; i < stationsJSON.length(); i++) {
                             Station station = new Station(stationsJSON.optJSONObject(i));
-                            stations.add(station);
+                            if ((station.lat != 0 || station.lng != 0) && !station.name.equals(TEST_STATION_NAME)) {
+                                stations.add(station);
+                            }
                         }
                     }
                 }
