@@ -16,6 +16,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
@@ -216,6 +217,16 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         searchInfoDistance = (TextView) findViewById(R.id.search_info_distance_text);
         searchInfoDuration = (TextView) findViewById(R.id.search_info_duration_text);
         View hideButton = findViewById(R.id.hide_search_view_button);
+
+        final View content = findViewById(android.R.id.content);
+        content.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                searchView.animate().translationYBy(-searchView.getHeight()).setDuration(0);
+                searchView.setVisibility(View.VISIBLE);
+                content.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+            }
+        });
 
         final GestureDetector swipeClickDetector = new GestureDetector(new SearchPanelGestureListener());
         hideButton.setOnTouchListener(new View.OnTouchListener() {
@@ -886,10 +897,9 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private void toggleSearchViewVisible() {
         if (!searchViewVisible) {
             searchViewVisible = true;
-            searchView.setVisibility(View.VISIBLE);
             this.actionSearchMenuItem.setVisible(false);
             this.actionClearSearchMenuItem.setVisible(false);
-            mapView.animate().translationY(searchView.getHeight());
+            searchView.animate().translationYBy(searchView.getHeight()).setDuration(250);
         } else {
             hideSearchView();
         }
@@ -918,7 +928,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             this.actionClearSearchMenuItem.setVisible(true);
         }
 
-        mapView.animate().translationY(0);
+        searchView.animate().translationYBy(-searchView.getHeight()).setDuration(250);
         InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(FragmentActivity.INPUT_METHOD_SERVICE);
         View focus = getCurrentFocus();
         if (inputMethodManager != null && focus != null) {
