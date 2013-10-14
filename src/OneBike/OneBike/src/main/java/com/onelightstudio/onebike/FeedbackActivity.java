@@ -1,20 +1,19 @@
 package com.onelightstudio.onebike;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.app.Activity;
-import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Patterns;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.Window;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.Toast;
 
 import java.util.Properties;
 
-import javax.mail.Authenticator;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -29,6 +28,7 @@ public class FeedbackActivity extends Activity {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
         setContentView(R.layout.activity_feedback);
+        ((EditText) findViewById(R.id.feedback_email)).setText(getUserEmail());
     }
 
 
@@ -49,6 +49,16 @@ public class FeedbackActivity extends Activity {
         }
     }
 
+    private String getUserEmail() {
+        Account[] accounts = AccountManager.get(this).getAccounts();
+        for (Account account : accounts) {
+            if (Patterns.EMAIL_ADDRESS.matcher(account.name).matches()) {
+                return account.name;
+            }
+        }
+        return "";
+    }
+
     private void sendFeedback() {
         String email = ((EditText) findViewById(R.id.feedback_email)).getText().toString();
         String content = ((EditText) findViewById(R.id.feedback_content)).getText().toString();
@@ -60,8 +70,7 @@ public class FeedbackActivity extends Activity {
         } else {
             Properties props = new Properties();
             props.put("mail.smtp.host", Constants.EMAIL_SMTP_HOST);
-            Session session = Session.getDefaultInstance(props, new Authenticator() {
-            });
+            Session session = Session.getDefaultInstance(props);
             final Message msg = new MimeMessage(session);
             try {
                 msg.setFrom(new InternetAddress(Constants.EMAIL_SENDER));

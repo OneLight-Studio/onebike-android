@@ -57,6 +57,6 @@ public interface Constants {
 
     static final String EMAIL_SMTP_HOST = "mail.prometil.com";
     static final String EMAIL_SENDER = "no-reply@onelight-studio.com";
-    static final String EMAIL_RECIPIENT = "thomas.gallinari@gmail.com";
+    static final String EMAIL_RECIPIENT = "support@onelight-studio.com";
     static final String EMAIL_SUBJECT = "OneBike Android Feedback";
 }
