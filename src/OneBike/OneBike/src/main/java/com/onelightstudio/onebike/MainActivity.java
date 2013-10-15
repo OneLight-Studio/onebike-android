@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.FragmentActivity;
@@ -59,6 +60,8 @@ import java.util.concurrent.TimeUnit;
 
 
 public class MainActivity extends FragmentActivity implements GooglePlayServicesClient.ConnectionCallbacks, GooglePlayServicesClient.OnConnectionFailedListener, View.OnClickListener {
+
+    private static final int ANIM_DURATION = 250;
 
 
     //----------------------------------------------------------------
@@ -222,9 +225,9 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         content.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
-                searchView.animate().translationYBy(-searchView.getHeight()).setDuration(0);
+                searchView.setY(-searchView.getHeight());
                 searchView.setVisibility(View.VISIBLE);
-                content.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                content.getViewTreeObserver().removeGlobalOnLayoutListener(this);
             }
         });
 
@@ -581,6 +584,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             } else {
                 // Tell the user to check its google play services
                 Toast.makeText(this, R.string.error_google_play_service, Toast.LENGTH_LONG).show();
+                finish();
             }
         }
     }
@@ -899,7 +903,11 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             searchViewVisible = true;
             this.actionSearchMenuItem.setVisible(false);
             this.actionClearSearchMenuItem.setVisible(false);
-            searchView.animate().translationYBy(searchView.getHeight()).setDuration(250);
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.JELLY_BEAN) {
+                searchView.setY(0);
+            } else {
+                searchView.animate().translationYBy(searchView.getHeight()).setDuration(ANIM_DURATION);
+            }
         } else {
             hideSearchView();
         }
@@ -928,7 +936,11 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             this.actionClearSearchMenuItem.setVisible(true);
         }
 
-        searchView.animate().translationYBy(-searchView.getHeight()).setDuration(250);
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.JELLY_BEAN) {
+            searchView.setY(-searchView.getHeight());
+        } else {
+            searchView.animate().translationYBy(-searchView.getHeight()).setDuration(ANIM_DURATION);
+        }
         InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(FragmentActivity.INPUT_METHOD_SERVICE);
         View focus = getCurrentFocus();
         if (inputMethodManager != null && focus != null) {
@@ -1336,9 +1348,17 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
     private void setSearchInfoVisible(boolean setVisible) {
         if (setVisible && !searchInfoVisible) {
-            searchInfo.animate().translationYBy(1 - searchInfo.getHeight());
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.JELLY_BEAN) {
+                searchInfo.setTranslationY(1 - searchInfo.getHeight());
+            } else {
+                searchInfo.animate().translationYBy(1 - searchInfo.getHeight()).setDuration(ANIM_DURATION);
+            }
         } else if (!setVisible && searchInfoVisible) {
-            searchInfo.animate().translationYBy(searchInfo.getHeight() - 1);
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.JELLY_BEAN) {
+                searchInfo.setTranslationY(searchInfo.getHeight() - 1);
+            } else {
+                searchInfo.animate().translationYBy(searchInfo.getHeight() - 1).setDuration(ANIM_DURATION);
+            }
         }
         searchInfoVisible = setVisible;
     }
