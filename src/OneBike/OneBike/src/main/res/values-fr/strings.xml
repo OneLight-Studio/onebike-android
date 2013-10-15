@@ -26,4 +26,9 @@
     <string name="feedback_error">Oups, une erreur est survenue pendant l\'envoi de votre message</string>
     <string name="feedback_thanks">Merci pour votre retour !</string>
     <string name="send">Send</string>
+    <string name="about_title">OneBike est l\'application qui facilite vos trajets en vélo libre service partout dans le monde !</string>
+    <string name="about_subtitle">Fini la galère des stations surchargées à votre arrivée, OneBike vous informe en temps réel.</string>
+    <string name="about_text_1">OneBike utilise les données des APIs temps réel JCDecaux &amp; CitiBikes.</string>
+    <string name="about_text_2">Pour toute information ou suggestion n\'hésitez pas, cliquez là-haut. Ne soyez pas timide, on adore vous écouter !</string>
+    <string name="about_copyright">OneBike est une application de OneLight Studio, marque déposée de la société Prometil.</string>
 </resources>

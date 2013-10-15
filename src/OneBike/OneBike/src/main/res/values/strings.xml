@@ -27,5 +27,10 @@
     <string name="feedback_error">Oops, an error occurred while sending your message</string>
     <string name="feedback_thanks">Thanks for your feedback!</string>
     <string name="send">Send</string>
+    <string name="about_title">OneBike is the app that makes your bike rides easier all around the world!</string>
+    <string name="about_subtitle">No more pain with overloaded bike stands when you arrive, OneBike keeps you informed in real time.</string>
+    <string name="about_text_1">OneBike uses data from the JCDecaux and CityBikes real time APIs.</string>
+    <string name="about_text_2">For any information or suggestion don\'t hesitate, click up there. Don\'t be shy, we love to hear you!</string>
+    <string name="about_copyright">OneBike is an app by OneLight Studio, a Prometil company's trademark.</string>
 
 </resources>
