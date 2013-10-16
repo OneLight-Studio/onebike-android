@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.FragmentActivity;
@@ -16,6 +17,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
@@ -58,6 +60,8 @@ import java.util.concurrent.TimeUnit;
 
 
 public class MainActivity extends FragmentActivity implements GooglePlayServicesClient.ConnectionCallbacks, GooglePlayServicesClient.OnConnectionFailedListener, View.OnClickListener {
+
+    private static final int ANIM_DURATION = 250;
 
 
     //----------------------------------------------------------------
@@ -107,7 +111,8 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
     private static final int FIELD_DEPARTURE = 0;
     private static final int FIELD_ARRIVAL = 1;
-    private final static String FORCE_CAMERA_POSITION = "ForceCameraPosition";
+    private static final String FORCE_CAMERA_POSITION = "ForceCameraPosition";
+    private static final String TEST_STATION_NAME = "TEST EDOS";
 
     private GoogleMap map;
     private boolean forceCameraPosition;
@@ -215,6 +220,16 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         searchInfoDistance = (TextView) findViewById(R.id.search_info_distance_text);
         searchInfoDuration = (TextView) findViewById(R.id.search_info_duration_text);
         View hideButton = findViewById(R.id.hide_search_view_button);
+
+        final View content = findViewById(android.R.id.content);
+        content.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                searchView.setY(-searchView.getHeight());
+                searchView.setVisibility(View.VISIBLE);
+                content.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+            }
+        });
 
         final GestureDetector swipeClickDetector = new GestureDetector(new SearchPanelGestureListener());
         hideButton.setOnTouchListener(new View.OnTouchListener() {
@@ -569,6 +584,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             } else {
                 // Tell the user to check its google play services
                 Toast.makeText(this, R.string.error_google_play_service, Toast.LENGTH_LONG).show();
+                finish();
             }
         }
     }
@@ -726,7 +742,9 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                         stations.clear();
                         for (int i = 0; i < stationsJSON.length(); i++) {
                             Station station = new Station(stationsJSON.optJSONObject(i));
-                            stations.add(station);
+                            if ((station.lat != 0 || station.lng != 0) && !station.name.equals(TEST_STATION_NAME)) {
+                                stations.add(station);
+                            }
                         }
                     }
                 }
@@ -883,10 +901,13 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private void toggleSearchViewVisible() {
         if (!searchViewVisible) {
             searchViewVisible = true;
-            searchView.setVisibility(View.VISIBLE);
             this.actionSearchMenuItem.setVisible(false);
             this.actionClearSearchMenuItem.setVisible(false);
-            mapView.animate().translationY(searchView.getHeight());
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.JELLY_BEAN) {
+                searchView.setY(0);
+            } else {
+                searchView.animate().translationYBy(searchView.getHeight()).setDuration(ANIM_DURATION);
+            }
         } else {
             hideSearchView();
         }
@@ -915,7 +936,11 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             this.actionClearSearchMenuItem.setVisible(true);
         }
 
-        mapView.animate().translationY(0);
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.JELLY_BEAN) {
+            searchView.setY(-searchView.getHeight());
+        } else {
+            searchView.animate().translationYBy(-searchView.getHeight()).setDuration(ANIM_DURATION);
+        }
         InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(FragmentActivity.INPUT_METHOD_SERVICE);
         View focus = getCurrentFocus();
         if (inputMethodManager != null && focus != null) {
@@ -1323,9 +1348,17 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
     private void setSearchInfoVisible(boolean setVisible) {
         if (setVisible && !searchInfoVisible) {
-            searchInfo.animate().translationYBy(1 - searchInfo.getHeight());
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.JELLY_BEAN) {
+                searchInfo.setTranslationY(1 - searchInfo.getHeight());
+            } else {
+                searchInfo.animate().translationYBy(1 - searchInfo.getHeight()).setDuration(ANIM_DURATION);
+            }
         } else if (!setVisible && searchInfoVisible) {
-            searchInfo.animate().translationYBy(searchInfo.getHeight() - 1);
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.JELLY_BEAN) {
+                searchInfo.setTranslationY(searchInfo.getHeight() - 1);
+            } else {
+                searchInfo.animate().translationYBy(searchInfo.getHeight() - 1).setDuration(ANIM_DURATION);
+            }
         }
         searchInfoVisible = setVisible;
     }
