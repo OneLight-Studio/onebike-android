@@ -24,6 +24,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -124,8 +125,12 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
     // UI items
     private View searchView;
+    private View searchInfo;
+    private TextView searchInfoDistance;
+    private TextView searchInfoDuration;
     private View mapView;
     private boolean searchViewVisible;
+    private boolean searchInfoVisible;
     private MenuItem actionSearchMenuItem;
     private MenuItem actionClearSearchMenuItem;
     private AutoCompleteTextView departureField;
@@ -205,6 +210,9 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         arrivalLocationProgress = (ProgressBar) findViewById(R.id.arrival_mylocation_progress);
         arrivalStandsField = (EditText) findViewById(R.id.arrival_stands);
         searchButton = (Button) findViewById(R.id.search_button);
+        searchInfo = findViewById(R.id.search_info);
+        searchInfoDistance = (TextView) findViewById(R.id.search_info_distance_text);
+        searchInfoDuration = (TextView) findViewById(R.id.search_info_duration_text);
         View hideButton = findViewById(R.id.hide_search_view_button);
 
         final GestureDetector swipeClickDetector = new GestureDetector(new SearchPanelGestureListener());
@@ -514,6 +522,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             map = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getMap();
             // Check if we were successful in obtaining the map.
             if (map != null) {
+                map.getUiSettings().setZoomControlsEnabled(false);
                 map.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
                     @Override
                     public void onCameraChange(CameraPosition cameraPosition) {
@@ -894,6 +903,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         arrivalStandsField.setText("1");
 
         actionClearSearchMenuItem.setVisible(false);
+        setSearchInfoVisible(false);
         clearMap();
         displayStations();
     }
@@ -1157,9 +1167,18 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             public void onResult(Context context, JSONObject result) {
                 if ("OK".equals(result.optString("status"))) {
                     JSONArray routeArray = result.optJSONArray("routes");
-                    JSONObject routes = routeArray.optJSONObject(0);
-                    JSONObject overviewPolylines = routes.optJSONObject("overview_polyline");
+                    JSONObject route = routeArray.optJSONObject(0);
+                    JSONArray legs = route.optJSONArray("legs");
+                    JSONObject leg = legs.optJSONObject(0);
+                    JSONObject overviewPolylines = route.optJSONObject("overview_polyline");
                     String encodedString = overviewPolylines.optString("points");
+                    String duration = leg.optJSONObject("duration").optString("text");
+                    String distance = leg.optJSONObject("distance").optString("text");
+
+                    searchInfoDuration.setText(duration);
+                    searchInfoDistance.setText(distance);
+                    setSearchInfoVisible(true);
+
                     List<LatLng> list = Util.decodePoly(encodedString);
                     // Add the location of the departure and arrival stations
                     list.add(0, searchModeDepartureStation.latLng);
@@ -1283,5 +1302,14 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         }
 
         return matchingStations;
+    }
+
+    private void setSearchInfoVisible(boolean setVisible) {
+        if (setVisible && !searchInfoVisible) {
+            searchInfo.animate().translationYBy(1 - searchInfo.getHeight());
+        } else if (!setVisible && searchInfoVisible) {
+            searchInfo.animate().translationYBy(searchInfo.getHeight() - 1);
+        }
+        searchInfoVisible = setVisible;
     }
 }
