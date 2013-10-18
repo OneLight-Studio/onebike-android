@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.FragmentActivity;
@@ -16,6 +17,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
@@ -24,6 +26,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -53,9 +56,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 
 public class MainActivity extends FragmentActivity implements GooglePlayServicesClient.ConnectionCallbacks, GooglePlayServicesClient.OnConnectionFailedListener, View.OnClickListener {
+
+    private static final int ANIM_DURATION = 250;
 
 
     //----------------------------------------------------------------
@@ -105,7 +111,8 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
     private static final int FIELD_DEPARTURE = 0;
     private static final int FIELD_ARRIVAL = 1;
-    private final static String FORCE_CAMERA_POSITION = "ForceCameraPosition";
+    private static final String FORCE_CAMERA_POSITION = "ForceCameraPosition";
+    private static final String TEST_STATION_NAME = "TEST EDOS";
 
     private GoogleMap map;
     private boolean forceCameraPosition;
@@ -124,8 +131,12 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
     // UI items
     private View searchView;
+    private View searchInfo;
+    private TextView searchInfoDistance;
+    private TextView searchInfoDuration;
     private View mapView;
     private boolean searchViewVisible;
+    private boolean searchInfoVisible;
     private MenuItem actionSearchMenuItem;
     private MenuItem actionClearSearchMenuItem;
     private AutoCompleteTextView departureField;
@@ -205,7 +216,20 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         arrivalLocationProgress = (ProgressBar) findViewById(R.id.arrival_mylocation_progress);
         arrivalStandsField = (EditText) findViewById(R.id.arrival_stands);
         searchButton = (Button) findViewById(R.id.search_button);
+        searchInfo = findViewById(R.id.search_info);
+        searchInfoDistance = (TextView) findViewById(R.id.search_info_distance_text);
+        searchInfoDuration = (TextView) findViewById(R.id.search_info_duration_text);
         View hideButton = findViewById(R.id.hide_search_view_button);
+
+        final View content = findViewById(android.R.id.content);
+        content.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                searchView.setY(-searchView.getHeight());
+                searchView.setVisibility(View.VISIBLE);
+                content.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+            }
+        });
 
         final GestureDetector swipeClickDetector = new GestureDetector(new SearchPanelGestureListener());
         hideButton.setOnTouchListener(new View.OnTouchListener() {
@@ -367,6 +391,8 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         }
 
         locationClient = new LocationClient(this, this, this);
+
+        AppRater.appLaunched(this);
     }
 
     @Override
@@ -512,6 +538,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             map = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getMap();
             // Check if we were successful in obtaining the map.
             if (map != null) {
+                map.getUiSettings().setZoomControlsEnabled(false);
                 map.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
                     @Override
                     public void onCameraChange(CameraPosition cameraPosition) {
@@ -559,6 +586,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             } else {
                 // Tell the user to check its google play services
                 Toast.makeText(this, R.string.error_google_play_service, Toast.LENGTH_LONG).show();
+                finish();
             }
         }
     }
@@ -716,7 +744,9 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                         stations.clear();
                         for (int i = 0; i < stationsJSON.length(); i++) {
                             Station station = new Station(stationsJSON.optJSONObject(i));
-                            stations.add(station);
+                            if ((station.lat != 0 || station.lng != 0) && !station.name.equals(TEST_STATION_NAME)) {
+                                stations.add(station);
+                            }
                         }
                     }
                 }
@@ -873,10 +903,13 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private void toggleSearchViewVisible() {
         if (!searchViewVisible) {
             searchViewVisible = true;
-            searchView.setVisibility(View.VISIBLE);
             this.actionSearchMenuItem.setVisible(false);
             this.actionClearSearchMenuItem.setVisible(false);
-            mapView.animate().translationY(searchView.getHeight());
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.JELLY_BEAN) {
+                searchView.setY(0);
+            } else {
+                searchView.animate().translationYBy(searchView.getHeight()).setDuration(ANIM_DURATION);
+            }
         } else {
             hideSearchView();
         }
@@ -892,6 +925,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         arrivalStandsField.setText("1");
 
         actionClearSearchMenuItem.setVisible(false);
+        setSearchInfoVisible(false);
         clearMap();
         displayStations();
     }
@@ -904,7 +938,11 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             this.actionClearSearchMenuItem.setVisible(true);
         }
 
-        mapView.animate().translationY(0);
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.JELLY_BEAN) {
+            searchView.setY(-searchView.getHeight());
+        } else {
+            searchView.animate().translationYBy(-searchView.getHeight()).setDuration(ANIM_DURATION);
+        }
         InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(FragmentActivity.INPUT_METHOD_SERVICE);
         View focus = getCurrentFocus();
         if (inputMethodManager != null && focus != null) {
@@ -1155,9 +1193,36 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             public void onResult(Context context, JSONObject result) {
                 if ("OK".equals(result.optString("status"))) {
                     JSONArray routeArray = result.optJSONArray("routes");
-                    JSONObject routes = routeArray.optJSONObject(0);
-                    JSONObject overviewPolylines = routes.optJSONObject("overview_polyline");
+                    JSONObject route = routeArray.optJSONObject(0);
+                    JSONArray legs = route.optJSONArray("legs");
+                    JSONObject leg = legs.optJSONObject(0);
+                    JSONObject overviewPolylines = route.optJSONObject("overview_polyline");
                     String encodedString = overviewPolylines.optString("points");
+                    String distance = leg.optJSONObject("distance").optString("text");
+                    long seconds = leg.optJSONObject("duration").optLong("value") / 2;  // we've asked for a walking route
+                    long hours = TimeUnit.SECONDS.toHours(seconds);
+                    long minutes = TimeUnit.SECONDS.toMinutes(seconds) - TimeUnit.HOURS.toMinutes(hours);
+                    String duration = "";
+                    if (hours > 1) {
+                        duration += hours + " " + getString(R.string.hours);
+                    } else if (hours > 0) {
+                        duration += hours + " " + getString(R.string.hour);
+                    }
+                    if (minutes > 0) {
+                        if (!duration.isEmpty()) {
+                            duration += " ";
+                        }
+                        if (minutes > 1) {
+                            duration += minutes + " " + getString(R.string.minutes);
+                        } else {
+                            duration += minutes + " " + getString(R.string.minute);
+                        }
+                    }
+
+                    searchInfoDuration.setText(duration);
+                    searchInfoDistance.setText(distance);
+                    setSearchInfoVisible(true);
+
                     List<LatLng> list = Util.decodePoly(encodedString);
                     // Add the location of the departure and arrival stations
                     list.add(0, searchModeDepartureStation.latLng);
@@ -1281,5 +1346,22 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         }
 
         return matchingStations;
+    }
+
+    private void setSearchInfoVisible(boolean setVisible) {
+        if (setVisible && !searchInfoVisible) {
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.JELLY_BEAN) {
+                searchInfo.setTranslationY(1 - searchInfo.getHeight());
+            } else {
+                searchInfo.animate().translationYBy(1 - searchInfo.getHeight()).setDuration(ANIM_DURATION);
+            }
+        } else if (!setVisible && searchInfoVisible) {
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.JELLY_BEAN) {
+                searchInfo.setTranslationY(searchInfo.getHeight() - 1);
+            } else {
+                searchInfo.animate().translationYBy(searchInfo.getHeight() - 1).setDuration(ANIM_DURATION);
+            }
+        }
+        searchInfoVisible = setVisible;
     }
 }

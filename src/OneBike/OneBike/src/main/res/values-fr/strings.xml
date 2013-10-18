@@ -18,6 +18,15 @@
     <string name="stations_not_available">Les stations ne sont pas chargées, veuillez réessayer dans quelques secondes</string>
     <string name="path_impossible">Il n\'y a pas de trajet disponible pour cette adresse</string>
     <string name="info">Info</string>
+    <string name="hours">heures</string>
+    <string name="hour">heure</string>
+    <string name="minutes">mins</string>
+    <string name="minute">min</string>
+    <string name="rate_title">Noter OneBike</string>
+    <string name="rate_message">Merci d\'utiliser OneBike ! Si vous aimez cette application, prenez un moment pour la noter :-) Merci pour votre soutien !</string>
+    <string name="rate_yes">Noter</string>
+    <string name="rate_no">Non merci</string>
+    <string name="rate_later">Plus tard</string>
     <string name="feedback">Feedback</string>
     <string name="feedback_email">Votre email</string>
     <string name="feedback_placeholder">Votre message</string>

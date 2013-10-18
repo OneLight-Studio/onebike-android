@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
     <string name="app_name">OneBike</string>
     <string name="error_init">Uh oh, failed to init the application</string>
     <string name="error_google_play_service">Please check your Google Play Services install</string>
@@ -19,6 +18,15 @@
     <string name="stations_not_available">Stations not loaded yet, please retry in seconds</string>
     <string name="path_impossible">Cannot show a route for these address</string>
     <string name="info">Info</string>
+    <string name="hours">hours</string>
+    <string name="hour">hour</string>
+    <string name="minutes">mins</string>
+    <string name="minute">min</string>
+    <string name="rate_title">Rate OneBike</string>
+    <string name="rate_message">If you enjoy using OneBike, would you mind taking a moment to rate it? Thanks for your support :-)</string>
+    <string name="rate_yes">Rate</string>
+    <string name="rate_no">No thanks</string>
+    <string name="rate_later">Later</string>
     <string name="feedback">Feedback</string>
     <string name="feedback_email">Your email</string>
     <string name="feedback_placeholder">Your message</string>
@@ -31,6 +39,5 @@
     <string name="about_subtitle">No more pain with overloaded bike stands when you arrive, OneBike keeps you informed in real time.</string>
     <string name="about_text_1">OneBike uses data from the JCDecaux and CityBikes real time APIs.</string>
     <string name="about_text_2">For any information or suggestion don\'t hesitate, click up there. Don\'t be shy, we love to hear you!</string>
-    <string name="about_copyright">OneBike is an app by OneLight Studio, a Prometil company's trademark.</string>
-
+    <string name="about_copyright">OneBike is an app by OneLight Studio, a Prometil company\'s trademark.</string>
 </resources>

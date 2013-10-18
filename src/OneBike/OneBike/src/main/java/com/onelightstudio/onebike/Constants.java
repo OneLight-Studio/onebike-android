@@ -1,7 +1,6 @@
 package com.onelightstudio.onebike;
 
 public interface Constants {
-
     static final Integer EARTH_RADIUS = 6371000;
 
     static final int MAP_DEFAULT_NO_LOCATION_ZOOM = 12;
@@ -34,7 +33,6 @@ public interface Constants {
     static final String GOOGLE_APP_API_KEY = "GoogleMapPlace_API";
     static final String GOOGLE_API_RADIUS = "radius";
 
-
     static final String JCD_URL = "https://api.jcdecaux.com/vls/v1/stations";
     static final String JCD_API_KEY = "apiKey";
     static final String JCD_CONTRACT = "contract";
@@ -59,4 +57,7 @@ public interface Constants {
     static final String EMAIL_SENDER = "no-reply@onelight-studio.com";
     static final String EMAIL_RECIPIENT = "support@onelight-studio.com";
     static final String EMAIL_SUBJECT = "OneBike Android Feedback";
+
+    static final int RATING_DAYS_UNTIL_PROMPT = 15;
+    static final int RATING_LAUNCHES_UNTIL_PROMPT = 10;
 }
