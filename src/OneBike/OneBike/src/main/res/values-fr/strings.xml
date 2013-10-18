@@ -22,4 +22,9 @@
     <string name="hour">heure</string>
     <string name="minutes">mins</string>
     <string name="minute">min</string>
+    <string name="rate_title">Noter OneBike</string>
+    <string name="rate_message">Merci d\'utiliser OneBike ! Si vous aimez cette application, prenez un moment pour la noter :-) Merci pour votre soutien !</string>
+    <string name="rate_yes">Noter</string>
+    <string name="rate_no">Non merci</string>
+    <string name="rate_later">Plus tard</string>
 </resources>

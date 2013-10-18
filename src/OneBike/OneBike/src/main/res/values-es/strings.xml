@@ -22,4 +22,9 @@
     <string name="hour">hora</string>
     <string name="minutes">mins</string>
     <string name="minute">min</string>
+    <string name="rate_title">Calificar OneBike</string>
+    <string name="rate_message">¡ Gracias por utilizar OneBike ! Si le gusta esta aplicación, tome un momento para calificarla :-) ¡ Gracias por su apoyo !</string>
+    <string name="rate_yes">Calificar</string>
+    <string name="rate_no">No gracias</string>
+    <string name="rate_later">Más tarde</string>
 </resources>

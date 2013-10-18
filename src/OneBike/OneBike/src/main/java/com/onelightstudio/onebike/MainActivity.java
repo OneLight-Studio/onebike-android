@@ -391,6 +391,8 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         }
 
         locationClient = new LocationClient(this, this, this);
+
+        AppRater.appLaunched(this);
     }
 
     @Override

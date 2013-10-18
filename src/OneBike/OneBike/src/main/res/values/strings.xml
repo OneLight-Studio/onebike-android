@@ -22,5 +22,10 @@
     <string name="hour">hour</string>
     <string name="minutes">mins</string>
     <string name="minute">min</string>
+    <string name="rate_title">Rate OneBike</string>
+    <string name="rate_message">If you enjoy using OneBike, would you mind taking a moment to rate it? Thanks for your support :-)</string>
+    <string name="rate_yes">Rate</string>
+    <string name="rate_no">No thanks</string>
+    <string name="rate_later">Later</string>
 </resources>
 
