@@ -1,5 +1,5 @@
 # OneBike
-An Android application that makes OneBike even more fabulous
+An Android application that makes bike rides even more fabulous
 
 # Importing the project into Android Studio
 
