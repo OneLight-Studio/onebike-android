@@ -5,6 +5,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 
 import com.google.android.gms.maps.model.LatLng;
+import com.onelightstudio.onebike.model.Contract;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -132,13 +133,8 @@ public class Util {
         return (long) (Constants.EARTH_RADIUS * c);
     }
 
-    /**
-     * Retrieve the JC Decaux contract name covering a given city
-     * @param city
-     * @param context
-     * @return the contract name for this city, null if not covered
-     */
-    public static String getContractNameForCity(String city, Context context) {
+    public static List<Contract> getContracts(Context context) {
+        List<Contract> contracts = new ArrayList<Contract>();
         InputStream is = context.getResources().openRawResource(R.raw.contracts);
         try {
             Reader reader = new InputStreamReader(is, "UTF_8");
@@ -156,20 +152,68 @@ public class Util {
             String fileContent = out.toString();
             JSONArray array = new JSONArray(fileContent);
             for (int i = 0; i < array.length(); i++) {
-                JSONObject contract = array.getJSONObject(i);
-                JSONArray cities = contract.getJSONArray("cities");
-                for (int cityIndex = 0; cityIndex < cities.length(); cityIndex++) {
-                    String cityName = cities.getString(cityIndex);
-                    if (cityName.equalsIgnoreCase(city)) {
-                        return contract.getString("name");
-                    }
+                JSONObject jsonContract = array.getJSONObject(i);
+                Contract contract = Contract.getFromJSon(jsonContract);
+                contracts.add(contract);
+            }
+
+        } catch (IOException e) {
+            Log.e("Could not read contracts file", e);
+        } catch (JSONException e) {
+            Log.e("Could not parse contracts file", e);
+        } finally {
+            try {
+                is.close();
+            } catch (IOException e) {
+                Log.i("Could not close contract file stream", e);
+            }
+        }
+
+        return contracts;
+    }
+
+    /**
+     * Retrieve the contract containing the given location
+     * @param location location
+     * @param context
+     * @return the contract if found, null if no contract covers this location
+     */
+    public static Contract getContractForLocation(LatLng location, Context context) {
+        InputStream is = context.getResources().openRawResource(R.raw.contracts);
+        try {
+            Reader reader = new InputStreamReader(is, "UTF_8");
+            int read;
+            final char[] buffer = new char[0x10000];
+            StringBuilder out = new StringBuilder();
+            do {
+                read = reader.read(buffer, 0, buffer.length);
+                if (read > 0) {
+                    out.append(buffer, 0, read);
+                }
+            } while (read >= 0);
+
+
+            String fileContent = out.toString();
+            JSONArray array = new JSONArray(fileContent);
+            for (int i = 0; i < array.length(); i++) {
+                JSONObject jsonContract = array.getJSONObject(i);
+                Contract contract = Contract.getFromJSon(jsonContract);
+                long distance = Util.getDistanceInMeters(location, contract.getCenter());
+                if (distance <= contract.getRadius()) {
+                    return contract;
                 }
             }
 
         } catch (IOException e) {
-            Log.e("Could not read JCD Contract file", e);
+            Log.e("Could not read contracts file", e);
         } catch (JSONException e) {
-            Log.e("Could not parse JCD Contract file", e);
+            Log.e("Could not parse contracts file", e);
+        } finally {
+            try {
+                is.close();
+            } catch (IOException e) {
+                Log.i("Could not close contract file stream", e);
+            }
         }
 
         return null;

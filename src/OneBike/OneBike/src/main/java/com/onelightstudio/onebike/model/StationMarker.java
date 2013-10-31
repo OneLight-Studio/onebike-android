@@ -37,13 +37,7 @@ public class StationMarker {
         if (station.markerOptions == null) {
             Bitmap bmp = createBitmap(ctx, station);
             // Do not display the 'xxx - ' before the station name
-            String title = station.name;
-            if (station.name != null) {
-                int indexOfSeparator = station.name.indexOf(" - ");
-                if (indexOfSeparator > -1) {
-                    title = station.name.substring(indexOfSeparator + 3);
-                }
-            }
+            String title = station.displayName;
             station.markerOptions = new MarkerOptions().position(station.latLng).title(title).icon(BitmapDescriptorFactory.fromBitmap(bmp)).anchor(MARKER_ANCHOR_U, MARKER_ANCHOR_V);
             bmp.recycle();
         }
