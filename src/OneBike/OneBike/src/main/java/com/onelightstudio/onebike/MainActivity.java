@@ -2,6 +2,8 @@ package com.onelightstudio.onebike;
 
 import android.content.Context;
 import android.content.Intent;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -51,6 +53,7 @@ import com.onelightstudio.onebike.ws.WSRequest;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -79,7 +82,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         @Override
         public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
             // Detect bottom to top gesture
-            if(e1.getY() - e2.getY() > SWIPE_MIN_DISTANCE && Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
+            if (e1.getY() - e2.getY() > SWIPE_MIN_DISTANCE && Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
                 hideSearchView();
                 return true;
             }
@@ -101,7 +104,6 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     }
 
 
-
     //----------------------------------------------------------------
     //
     //  CLASS PROPERTIES
@@ -117,6 +119,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private GoogleMap map;
     private boolean forceCameraPosition;
     private LocationClient locationClient;
+    private Geocoder geocoder;
 
     // Global list
     private ArrayList<Station> stations;
@@ -204,6 +207,8 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         };
         timer = new Handler();
 
+        geocoder = new Geocoder(this);
+
         // Init view and elements
         searchView = findViewById(R.id.search_view);
         mapView = findViewById(R.id.map_view);
@@ -261,58 +266,58 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         departureField.setOnKeyListener(new View.OnKeyListener() {
 
             public boolean onKey(View v, int keyCode, KeyEvent event) {
-            // If the event is a key-down event on the "enter" button
-            if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
-                    (keyCode == KeyEvent.KEYCODE_ENTER)) {
-                // Perform action on Enter key press
-                departureField.clearFocus();
-                arrivalField.requestFocus();
-                return true;
-            }
-            return false;
+                // If the event is a key-down event on the "enter" button
+                if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
+                        (keyCode == KeyEvent.KEYCODE_ENTER)) {
+                    // Perform action on Enter key press
+                    departureField.clearFocus();
+                    arrivalField.requestFocus();
+                    return true;
+                }
+                return false;
             }
         });
 
         departureBikesField.setOnKeyListener(new View.OnKeyListener() {
 
             public boolean onKey(View v, int keyCode, KeyEvent event) {
-            // If the event is a key-down event on the "enter" button
-            if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
-                    (keyCode == KeyEvent.KEYCODE_ENTER)) {
-                // Perform action on Enter key press
-                departureBikesField.clearFocus();
-                arrivalStandsField.requestFocus();
-                return true;
-            }
-            return false;
+                // If the event is a key-down event on the "enter" button
+                if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
+                        (keyCode == KeyEvent.KEYCODE_ENTER)) {
+                    // Perform action on Enter key press
+                    departureBikesField.clearFocus();
+                    arrivalStandsField.requestFocus();
+                    return true;
+                }
+                return false;
             }
         });
 
         arrivalField.setOnKeyListener(new View.OnKeyListener() {
 
             public boolean onKey(View v, int keyCode, KeyEvent event) {
-            // If the event is a key-down event on the "enter" button
-            if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
-                    (keyCode == KeyEvent.KEYCODE_ENTER)) {
-                // Perform action on Enter key press
-                searchModeStartSearch();
-                return true;
-            }
-            return false;
+                // If the event is a key-down event on the "enter" button
+                if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
+                        (keyCode == KeyEvent.KEYCODE_ENTER)) {
+                    // Perform action on Enter key press
+                    searchModeStartSearch();
+                    return true;
+                }
+                return false;
             }
         });
 
         arrivalStandsField.setOnKeyListener(new View.OnKeyListener() {
 
             public boolean onKey(View v, int keyCode, KeyEvent event) {
-            // If the event is a key-down event on the "enter" button
-            if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
-                    (keyCode == KeyEvent.KEYCODE_ENTER)) {
-                // Perform action on Enter key press
-                searchModeStartSearch();
-                return true;
-            }
-            return false;
+                // If the event is a key-down event on the "enter" button
+                if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
+                        (keyCode == KeyEvent.KEYCODE_ENTER)) {
+                    // Perform action on Enter key press
+                    searchModeStartSearch();
+                    return true;
+                }
+                return false;
             }
         });
 
@@ -349,7 +354,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             @Override
             public void afterTextChanged(Editable editable) {
                 if (!editable.toString().isEmpty()) {
-                    if(Integer.valueOf(editable.toString()) == 0) {
+                    if (Integer.valueOf(editable.toString()) == 0) {
                         departureBikesField.setText("1");
                         arrivalStandsField.setText("1");
                     } else {
@@ -610,6 +615,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     /**
      * Call loadStations with no contract.
      * If the stations list is empty, search a contract first, then either call loadStations with the contract or with no contract.
+     *
      * @param executeInBackground
      */
     private void loadStations(final boolean executeInBackground) {
@@ -626,61 +632,82 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 loadStations(false, Constants.JCD_DEFAULT_CONTRACT_KEY);
             } else {
                 // Retrieve city name
-                WSRequest request = new WSRequest(MainActivity.this, Constants.GOOGLE_API_GEOCODE_URL);
-                request.withParam(Constants.GOOGLE_API_LATLNG, userLocation.getLatitude() + "," + userLocation.getLongitude());
-                request.withParam(Constants.GOOGLE_API_SENSOR, "true");
-                request.handleWith(new WSDefaultHandler(false) {
+                if (Geocoder.isPresent()) {
+                    try {
+                        List<Address> addresses = geocoder.getFromLocation(userLocation.getLatitude(), userLocation.getLongitude(), 1);
+                        if (addresses != null && !addresses.isEmpty()) {
+                            String jcdContract = Util.getContractNameForCity(addresses.get(0).getLocality(), MainActivity.this);
+                            loadStations(executeInBackground, jcdContract);
+                        } else {
+                            loadStations(executeInBackground, null);
+                        }
+                    } catch (IOException e) {
+                        Log.e("Could not retrieve user address", e);
+                        loadStationsWithGoogleWebservices(executeInBackground, userLocation);
+                    }
+                } else {
+                    Log.i("Geocoder not present, falling back to Google webservices");
+                    loadStationsWithGoogleWebservices(executeInBackground, userLocation);
+                }
+            }
+        } else {
+            loadStations(executeInBackground, null);
+        }
+    }
 
-                    @Override
-                    public void onResult(Context context, JSONObject result) {
-                        String jcdContract = null;
-                        String cityName = null;
-                        JSONArray addresses = (JSONArray) result.opt("results");
-                        if (addresses.length() > 0) {
-                            JSONObject address = (JSONObject) addresses.opt(0);
-                            JSONArray addressComponents = address.optJSONArray("address_components");
-                            if (addressComponents != null) {
-                                localitySearch:
-                                for (int i = 0; i < addressComponents.length(); i++) {
-                                    JSONObject component = addressComponents.optJSONObject(i);
-                                    if (component != null) {
-                                        JSONArray types = component.optJSONArray("types");
-                                        if (types != null) {
-                                            for (int j = 0; j < types.length(); j++) {
-                                                String type = types.optString(j);
-                                                if ("locality".equals(type)) {
-                                                    cityName = component.optString("long_name");
-                                                    break localitySearch;
-                                                }
-                                            }
+    private void loadStationsWithGoogleWebservices(final boolean executeInBackground, Location userLocation) {
+        WSRequest request = new WSRequest(MainActivity.this, Constants.GOOGLE_API_GEOCODE_URL);
+        request.withParam(Constants.GOOGLE_API_LATLNG, userLocation.getLatitude() + "," + userLocation.getLongitude());
+        request.withParam(Constants.GOOGLE_API_SENSOR, "true");
+        request.handleWith(new WSDefaultHandler(false) {
+
+            @Override
+            public void onResult(Context context, JSONObject result) {
+                String jcdContract = null;
+                String cityName = null;
+                JSONArray addresses = (JSONArray) result.opt("results");
+                if (addresses.length() > 0) {
+                    JSONObject address = (JSONObject) addresses.opt(0);
+                    JSONArray addressComponents = address.optJSONArray("address_components");
+                    if (addressComponents != null) {
+                        localitySearch:
+                        for (int i = 0; i < addressComponents.length(); i++) {
+                            JSONObject component = addressComponents.optJSONObject(i);
+                            if (component != null) {
+                                JSONArray types = component.optJSONArray("types");
+                                if (types != null) {
+                                    for (int j = 0; j < types.length(); j++) {
+                                        String type = types.optString(j);
+                                        if ("locality".equals(type)) {
+                                            cityName = component.optString("long_name");
+                                            break localitySearch;
                                         }
                                     }
                                 }
                             }
                         }
-                        if (cityName != null) {
-                            // Retrieve contract covering this city
-                            jcdContract = Util.getContractNameForCity(cityName, MainActivity.this);
-                        }
-                        loadStations(executeInBackground, jcdContract);
                     }
-
-                    @Override
-                    public void onException(Context context, Exception e) {
-                        loadStations(executeInBackground, null);
-                    }
-
-                    @Override
-                    public void onError(Context context, int errorCode) {
-                        loadStations(executeInBackground, null);
-                    }
-
-                });
-                request.call();
+                }
+                if (cityName != null) {
+                    // Retrieve contract covering this city
+                    jcdContract = Util.getContractNameForCity(cityName, MainActivity.this);
+                }
+                loadStations(executeInBackground, jcdContract);
             }
-        } else {
-            loadStations(executeInBackground, null);
-        }
+
+            @Override
+            public void onException(Context context, Exception e) {
+                loadStations(executeInBackground, null);
+            }
+
+            @Override
+            public void onError(Context context, int errorCode) {
+                Log.e("HTTP Error Code " + errorCode);
+                loadStations(executeInBackground, null);
+            }
+
+        });
+        request.call();
     }
 
     private void loadStations(final boolean executeInBackground, final String contract) {
@@ -968,6 +995,38 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         locationProgress.setVisibility(View.VISIBLE);
         fieldText.setAdapter((ArrayAdapter<String>) null);
 
+        if (Geocoder.isPresent()) {
+            try {
+                List<Address> addresses = geocoder.getFromLocation(userLocation.getLatitude(), userLocation.getLongitude(), 1);
+                if (addresses != null && !addresses.isEmpty()) {
+                    locationButton.setVisibility(View.VISIBLE);
+                    locationProgress.setVisibility(View.GONE);
+                    Address address = addresses.get(0);
+                    fieldText.setText(String.format(
+                            "%s, %s, %s",
+                            // If there's a street address, add it
+                            address.getMaxAddressLineIndex() > 0 ?
+                                    address.getAddressLine(0) : "",
+                            // Locality is usually a city
+                            address.getLocality(),
+                            // The country of the address
+                            address.getCountryName()));
+                } else {
+                    locationButton.setVisibility(View.VISIBLE);
+                    locationProgress.setVisibility(View.GONE);
+                    Toast.makeText(MainActivity.this, R.string.address_not_found, Toast.LENGTH_LONG).show();
+                }
+            } catch (IOException e) {
+                Log.e("Could not retrieve user address", e);
+                fillAddressFieldWithGoogleWebservices(userLocation, fieldText, locationButton, locationProgress);
+            }
+        } else {
+            Log.i("Geocoder not present, falling back to Google webservices");
+            fillAddressFieldWithGoogleWebservices(userLocation, fieldText, locationButton, locationProgress);
+        }
+    }
+
+    private void fillAddressFieldWithGoogleWebservices(Location userLocation, final AutoCompleteTextView fieldText, final ImageButton locationButton, final ProgressBar locationProgress) {
         WSRequest request = new WSRequest(MainActivity.this, Constants.GOOGLE_API_GEOCODE_URL);
         request.withParam(Constants.GOOGLE_API_LATLNG, userLocation.getLatitude() + "," + userLocation.getLongitude());
         request.withParam(Constants.GOOGLE_API_SENSOR, "true");
@@ -988,6 +1047,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
             @Override
             public void onError(Context context, int errorCode) {
+                Log.e("HTTP Error Code " + errorCode);
                 locationButton.setVisibility(View.VISIBLE);
                 locationProgress.setVisibility(View.GONE);
                 Toast.makeText(MainActivity.this, R.string.address_not_found, Toast.LENGTH_LONG).show();
@@ -1042,12 +1102,49 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     }
 
     private void searchModeLoadFieldLocation(String address, final int fieldId) {
+        if (Geocoder.isPresent()) {
+            try {
+                List<Address> addresses = geocoder.getFromLocationName(address, 1);
+                if (addresses != null && !addresses.isEmpty()) {
+                    Address addr = addresses.get(0);
+                    double lat = addr.getLatitude();
+                    double lng = addr.getLongitude();
+                    if (fieldId == FIELD_DEPARTURE) {
+                        departureLocation = new LatLng(lat, lng);
+                    }
+                    if (fieldId == FIELD_ARRIVAL) {
+                        arrivalLocation = new LatLng(lat, lng);
+                    }
+
+                    // This function is called for departure and arrival fields
+                    // Once we have the 2 location, the stations and route loading can continue
+                    if (departureLocation != null && arrivalLocation != null) {
+                        if (searchModeLoadStationsAndRoute()) {
+                            searchModeDisplayStationsAndRoute();
+                        }
+                    }
+                } else {
+                    searchButton.setEnabled(true);
+                    setProgressBarIndeterminateVisibility(false);
+                }
+            } catch (IOException e) {
+                Log.e("Could not retrieve user address", e);
+                searchModeLoadFieldLocationWithGoogleWebservices(address, fieldId);
+            }
+        } else {
+            Log.i("Geocoder not present, falling back to Google webservices");
+            searchModeLoadFieldLocationWithGoogleWebservices(address, fieldId);
+        }
+    }
+
+    private void searchModeLoadFieldLocationWithGoogleWebservices(String address, final int fieldId) {
         WSRequest request = new WSRequest(MainActivity.this, Constants.GOOGLE_API_GEOCODE_URL);
         request.withParam(Constants.GOOGLE_API_ADDRESS, address);
         request.withParam(Constants.GOOGLE_API_SENSOR, "true");
         request.handleWith(new WSDefaultHandler(true) {
             @Override
             public void onError(Context context, int errorCode) {
+                Log.e("HTTP Error Code " + errorCode);
                 Toast.makeText(MainActivity.this, R.string.ws_google_search_route_fail, Toast.LENGTH_LONG).show();
                 searchButton.setEnabled(true);
                 setProgressBarIndeterminateVisibility(false);
@@ -1088,13 +1185,19 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                             searchButton.setEnabled(true);
                             setProgressBarIndeterminateVisibility(false);
                             if (fieldId == FIELD_DEPARTURE) {
-                                Toast.makeText(MainActivity.this, R.string.arrival_unavailable, Toast.LENGTH_LONG).show();
+                                Toast.makeText(MainActivity.this, R.string.departure_unavailable, Toast.LENGTH_LONG).show();
                             }
                             if (fieldId == FIELD_ARRIVAL) {
                                 Toast.makeText(MainActivity.this, R.string.arrival_unavailable, Toast.LENGTH_LONG).show();
                             }
                         }
+                    } else {
+                        searchButton.setEnabled(true);
+                        setProgressBarIndeterminateVisibility(false);
                     }
+                } else {
+                    searchButton.setEnabled(true);
+                    setProgressBarIndeterminateVisibility(false);
                 }
             }
         });
