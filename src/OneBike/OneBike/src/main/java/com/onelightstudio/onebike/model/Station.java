@@ -96,4 +96,9 @@ public class Station {
         availableBikes = station.availableBikes;
         lastUpdate = station.lastUpdate;
     }
+
+    public void clearMarker(){
+        this.searchMarker.remove();
+        this.markerOptions = null;
+    }
 }

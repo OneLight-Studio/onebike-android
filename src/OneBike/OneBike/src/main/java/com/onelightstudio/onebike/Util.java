@@ -173,7 +173,7 @@ public class Util {
     }
 
     /**
-     * Retrieve the contract containing the given location
+     * Retrieve the nearest contract containing the given location with dela max of 5km
      * @param location location
      * @param context
      * @return the contract if found, null if no contract covers this location
@@ -195,15 +195,22 @@ public class Util {
 
             String fileContent = out.toString();
             JSONArray array = new JSONArray(fileContent);
+
+            long minValue = 100000000;
+            Contract contract = null;
             for (int i = 0; i < array.length(); i++) {
                 JSONObject jsonContract = array.getJSONObject(i);
-                Contract contract = Contract.getFromJSon(jsonContract);
-                long distance = Util.getDistanceInMeters(location, contract.getCenter());
-                if (distance <= contract.getRadius()) {
-                    return contract;
+                Contract aContract = Contract.getFromJSon(jsonContract);
+                long distance = Util.getDistanceInMeters(location, aContract.getCenter());
+                if(distance-aContract.getRadius() <= Constants.STATION_SEARCH_MAX_RADIUS_IN_METERS) {
+                    if(distance-aContract.getRadius() < minValue){
+                        minValue = distance-aContract.getRadius();
+                        contract = aContract;
+                    }
                 }
             }
 
+            return contract;
         } catch (IOException e) {
             Log.e("Could not read contracts file", e);
         } catch (JSONException e) {
