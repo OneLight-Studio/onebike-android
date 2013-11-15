@@ -776,7 +776,6 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 }
 
                 if (map != null) {
-                    displayStations();
                     loadingStations = false;
 
                     if(waitLoadStationForLauchSearch){
@@ -784,6 +783,8 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                             searchModeDisplayStationsAndRoute();
                         }
                         waitLoadStationForLauchSearch = false;
+                    } else {
+                        displayStations();
                     }
 
                 }
@@ -818,7 +819,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         ArrayList<Marker> tmpAddedMarkers = new ArrayList<Marker>();
         normalModeClusterBounds = new HashMap<Marker, LatLngBounds>();
         for (Contract contract : contracts) {
-            MarkerOptions mo = new MarkerOptions().position(contract.getCenter()).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_station_cluster));
+            MarkerOptions mo = new MarkerOptions().position(contract.getCenter()).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_station_cluster)).anchor(StationMarker.MARKER_ANCHOR_U, StationMarker.MARKER_ANCHOR_V);
             Marker marker = map.addMarker(mo);
             tmpAddedMarkers.add(marker);
             normalModeClusterBounds.put(marker, null);
