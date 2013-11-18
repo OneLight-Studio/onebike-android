@@ -962,22 +962,24 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     }
 
     private void hideSearchView() {
-        searchViewVisible = false;
-        this.actionSearchMenuItem.setVisible(true);
+        if(searchViewVisible){
+            searchViewVisible = false;
+            this.actionSearchMenuItem.setVisible(true);
 
-        if (searchMode) {
-            this.actionClearSearchMenuItem.setVisible(true);
-        }
+            if (searchMode) {
+                this.actionClearSearchMenuItem.setVisible(true);
+            }
 
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.JELLY_BEAN) {
-            searchView.setY(-searchView.getHeight());
-        } else {
-            searchView.animate().translationYBy(-searchView.getHeight()).setDuration(ANIM_DURATION);
-        }
-        InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(FragmentActivity.INPUT_METHOD_SERVICE);
-        View focus = getCurrentFocus();
-        if (inputMethodManager != null && focus != null) {
-            inputMethodManager.hideSoftInputFromWindow(focus.getWindowToken(), 0);
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.JELLY_BEAN) {
+                searchView.setY(-searchView.getHeight());
+            } else {
+                searchView.animate().translationYBy(-searchView.getHeight()).setDuration(ANIM_DURATION);
+            }
+            InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(FragmentActivity.INPUT_METHOD_SERVICE);
+            View focus = getCurrentFocus();
+            if (inputMethodManager != null && focus != null) {
+                inputMethodManager.hideSoftInputFromWindow(focus.getWindowToken(), 0);
+            }
         }
     }
 

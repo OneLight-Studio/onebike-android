@@ -53,16 +53,16 @@
             android:screenOrientation="portrait" />
 
         <!-- Development Key -->
-        <meta-data
+        <!--<meta-data
             android:name="com.google.android.maps.v2.API_KEY"
             android:value="AIzaSyDgKRier12bPPknXhPRvuAvPdNn3vFQbW8" />
+        -->
 
         <!-- Production Key -->
-        <!--
-             <meta-data
+        <meta-data
             android:name="com.google.android.maps.v2.API_KEY"
             android:value="AIzaSyD2Gwnud-X9UIxrfZzLmhCd-bmxyEtJzzk" />
-        -->
+
     </application>
 
 </manifest>
