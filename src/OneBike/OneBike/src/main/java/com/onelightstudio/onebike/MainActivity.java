@@ -958,7 +958,8 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         actionClearSearchMenuItem.setVisible(false);
         setSearchInfoVisible(false);
         clearMap();
-        displayStations();
+
+        loadStationsForCurrentDisplayedLocation(true);
     }
 
     private void hideSearchView() {
