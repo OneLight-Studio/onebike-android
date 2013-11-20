@@ -2,8 +2,11 @@ package com.onelightstudio.onebike;
 
 import android.content.Context;
 import android.content.Intent;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.FragmentActivity;
@@ -16,6 +19,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
@@ -24,6 +28,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -40,6 +45,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.onelightstudio.onebike.model.Contract;
 import com.onelightstudio.onebike.model.Station;
 import com.onelightstudio.onebike.model.StationMarker;
 import com.onelightstudio.onebike.ws.WSDefaultHandler;
@@ -48,14 +54,18 @@ import com.onelightstudio.onebike.ws.WSRequest;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 
 public class MainActivity extends FragmentActivity implements GooglePlayServicesClient.ConnectionCallbacks, GooglePlayServicesClient.OnConnectionFailedListener, View.OnClickListener {
+
+    private static final int ANIM_DURATION = 250;
 
 
     //----------------------------------------------------------------
@@ -95,7 +105,6 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     }
 
 
-
     //----------------------------------------------------------------
     //
     //  CLASS PROPERTIES
@@ -105,14 +114,17 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
     private static final int FIELD_DEPARTURE = 0;
     private static final int FIELD_ARRIVAL = 1;
-    private final static String FORCE_CAMERA_POSITION = "ForceCameraPosition";
+    private static final String FORCE_CAMERA_POSITION = "ForceCameraPosition";
+    private static final String TEST_STATION_NAME = "TEST EDOS";
 
     private GoogleMap map;
     private boolean forceCameraPosition;
     private LocationClient locationClient;
+    private Geocoder geocoder;
 
     // Global list
     private ArrayList<Station> stations;
+    private List<Contract> contracts;
 
     // Properties to load stations
     private Handler timer;
@@ -121,11 +133,17 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private int loadStationsTry = 0;
     private boolean loadingStations;
     private AsyncTask displayStationsTask;
+    private Contract currentContract = null;
+    private boolean displayingContracts;
 
     // UI items
     private View searchView;
+    private View searchInfo;
+    private TextView searchInfoDistance;
+    private TextView searchInfoDuration;
     private View mapView;
     private boolean searchViewVisible;
+    private boolean searchInfoVisible;
     private MenuItem actionSearchMenuItem;
     private MenuItem actionClearSearchMenuItem;
     private AutoCompleteTextView departureField;
@@ -142,6 +160,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
 
     // Markers and search mode stuff
     private boolean searchMode;
+    private boolean waitLoadStationForLauchSearch;
     private ArrayList<Station> searchModeDepartureStations;
     private ArrayList<Station> searchModeArrivalStations;
     private Station searchModeDepartureStation;
@@ -172,6 +191,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         getActionBar().setDisplayShowTitleEnabled(false);
 
         stations = new ArrayList<Station>();
+        contracts = new ArrayList<Contract>();
 
         //Station loading task
         timeRunnable = new Runnable() {
@@ -186,16 +206,17 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 }
 
                 if (pausedTime == null) {
-                    loadStations(!stationsIsEmpty);
+                    loadStationsForCurrentDisplayedLocation(!stationsIsEmpty);
                     timer.postDelayed(this, Constants.MAP_TIMER_REFRESH_IN_MILLISECONDES);
                 }
             }
         };
         timer = new Handler();
 
+        geocoder = new Geocoder(this);
+
         // Init view and elements
         searchView = findViewById(R.id.search_view);
-        mapView = findViewById(R.id.map_view);
         departureField = (AutoCompleteTextView) findViewById(R.id.departure_field);
         departureLocationButton = (ImageButton) findViewById(R.id.departure_mylocation_button);
         departureLocationProgress = (ProgressBar) findViewById(R.id.departure_mylocation_progress);
@@ -205,7 +226,20 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         arrivalLocationProgress = (ProgressBar) findViewById(R.id.arrival_mylocation_progress);
         arrivalStandsField = (EditText) findViewById(R.id.arrival_stands);
         searchButton = (Button) findViewById(R.id.search_button);
+        searchInfo = findViewById(R.id.search_info);
+        searchInfoDistance = (TextView) findViewById(R.id.search_info_distance_text);
+        searchInfoDuration = (TextView) findViewById(R.id.search_info_duration_text);
         View hideButton = findViewById(R.id.hide_search_view_button);
+
+        final View content = findViewById(android.R.id.content);
+        content.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                searchView.setY(-searchView.getHeight());
+                searchView.setVisibility(View.VISIBLE);
+                content.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+            }
+        });
 
         final GestureDetector swipeClickDetector = new GestureDetector(new SearchPanelGestureListener());
         hideButton.setOnTouchListener(new View.OnTouchListener() {
@@ -237,58 +271,58 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         departureField.setOnKeyListener(new View.OnKeyListener() {
 
             public boolean onKey(View v, int keyCode, KeyEvent event) {
-            // If the event is a key-down event on the "enter" button
-            if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
-                    (keyCode == KeyEvent.KEYCODE_ENTER)) {
-                // Perform action on Enter key press
-                departureField.clearFocus();
-                arrivalField.requestFocus();
-                return true;
-            }
-            return false;
+                // If the event is a key-down event on the "enter" button
+                if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
+                        (keyCode == KeyEvent.KEYCODE_ENTER)) {
+                    // Perform action on Enter key press
+                    departureField.clearFocus();
+                    arrivalField.requestFocus();
+                    return true;
+                }
+                return false;
             }
         });
 
         departureBikesField.setOnKeyListener(new View.OnKeyListener() {
 
             public boolean onKey(View v, int keyCode, KeyEvent event) {
-            // If the event is a key-down event on the "enter" button
-            if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
-                    (keyCode == KeyEvent.KEYCODE_ENTER)) {
-                // Perform action on Enter key press
-                departureBikesField.clearFocus();
-                arrivalStandsField.requestFocus();
-                return true;
-            }
-            return false;
+                // If the event is a key-down event on the "enter" button
+                if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
+                        (keyCode == KeyEvent.KEYCODE_ENTER)) {
+                    // Perform action on Enter key press
+                    departureBikesField.clearFocus();
+                    arrivalStandsField.requestFocus();
+                    return true;
+                }
+                return false;
             }
         });
 
         arrivalField.setOnKeyListener(new View.OnKeyListener() {
 
             public boolean onKey(View v, int keyCode, KeyEvent event) {
-            // If the event is a key-down event on the "enter" button
-            if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
-                    (keyCode == KeyEvent.KEYCODE_ENTER)) {
-                // Perform action on Enter key press
-                searchModeStartSearch();
-                return true;
-            }
-            return false;
+                // If the event is a key-down event on the "enter" button
+                if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
+                        (keyCode == KeyEvent.KEYCODE_ENTER)) {
+                    // Perform action on Enter key press
+                    searchModeStartSearch();
+                    return true;
+                }
+                return false;
             }
         });
 
         arrivalStandsField.setOnKeyListener(new View.OnKeyListener() {
 
             public boolean onKey(View v, int keyCode, KeyEvent event) {
-            // If the event is a key-down event on the "enter" button
-            if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
-                    (keyCode == KeyEvent.KEYCODE_ENTER)) {
-                // Perform action on Enter key press
-                searchModeStartSearch();
-                return true;
-            }
-            return false;
+                // If the event is a key-down event on the "enter" button
+                if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
+                        (keyCode == KeyEvent.KEYCODE_ENTER)) {
+                    // Perform action on Enter key press
+                    searchModeStartSearch();
+                    return true;
+                }
+                return false;
             }
         });
 
@@ -367,6 +401,10 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         }
 
         locationClient = new LocationClient(this, this, this);
+
+        timer.postDelayed(timeRunnable, Constants.MAP_TIMER_REFRESH_IN_MILLISECONDES);
+
+        AppRater.appLaunched(this);
     }
 
     @Override
@@ -392,7 +430,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         if (pausedTime != null) {
             if ((System.currentTimeMillis() - pausedTime) > Constants.MAP_TIMER_REFRESH_IN_MILLISECONDES) {
                 // Too much time has passed, a refresh is needed
-                loadStations(true, null);
+                loadStationsForCurrentDisplayedLocation(true);
                 timer.postDelayed(timeRunnable, Constants.MAP_TIMER_REFRESH_IN_MILLISECONDES);
             } else {
                 timer.postDelayed(timeRunnable, Constants.MAP_TIMER_REFRESH_IN_MILLISECONDES - (System.currentTimeMillis() - pausedTime));
@@ -423,11 +461,22 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             stationsIsEmpty = stations.isEmpty();
         }
 
-        if (stationsIsEmpty) {
-            loadStations(false);
+        // Move to user location
+        boolean animated = animateCameraOnMapUserLocEnable(new GoogleMap.CancelableCallback() {
+            @Override
+            public void onFinish() {
+                loadStationsForCurrentDisplayedLocation(false);
+            }
+
+            @Override
+            public void onCancel() {
+                loadStationsForCurrentDisplayedLocation(false);
+            }
+        });
+        if (!animated) {
+            loadStationsForCurrentDisplayedLocation(false);
         }
 
-        animateCameraOnMapUserLocEnable();
     }
 
     @Override
@@ -490,7 +539,11 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         if (searchViewVisible) {
             hideSearchView();
         } else {
-            super.onBackPressed();
+            if(searchMode){
+                quitSearchMode();
+            } else {
+                super.onBackPressed();
+            }
         }
     }
 
@@ -512,17 +565,25 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             map = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getMap();
             // Check if we were successful in obtaining the map.
             if (map != null) {
+                map.getUiSettings().setZoomControlsEnabled(false);
                 map.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
                     @Override
                     public void onCameraChange(CameraPosition cameraPosition) {
                         //Don't display on each move in search mode cause all the informations are displayed at one time
                         if (!searchMode) {
-                            displayStations();
+                            // If the new location is no longer in the current displayed contract, search for the new one
+                            if (currentContract == null
+                                    || map.getCameraPosition().zoom < Constants.MAP_DEFAULT_ZOOM_TO_DISPLAY_CONTRACTS
+                                    || Util.getDistanceInMeters(cameraPosition.target, currentContract.getCenter()) > currentContract.getRadius()) {
+                                loadStationsForCurrentDisplayedLocation(false);
+                            } else {
+                                displayStations();
+                            }
                         }
                     }
                 });
                 map.setMyLocationEnabled(true);
-                animateCameraOnMapUserLocEnable();
+                animateCameraOnMapUserLocEnable(null);
                 map.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
                     @Override
                     public boolean onMarkerClick(Marker marker) {
@@ -547,9 +608,18 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                         } else {
                             LatLngBounds bounds = normalModeClusterBounds.get(marker);
                             if (bounds != null) {
-                                map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, getResources().getDimensionPixelSize(R.dimen.padding_zoom_cluster)));
+                                // If the marker is a contracts marker, zoom to min zoom for display station center by the marker position
+                                if(map.getCameraPosition().zoom < Constants.MAP_DEFAULT_ZOOM_TO_DISPLAY_CONTRACTS){
+                                    map.animateCamera(CameraUpdateFactory.newLatLngZoom(marker.getPosition(), Double.valueOf(Constants.MAP_DEFAULT_ZOOM_TO_DISPLAY_CONTRACTS).floatValue()));
+                                } else {
+                                    map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, getResources().getDimensionPixelSize(R.dimen.padding_zoom_cluster)));
+                                }
                             } else {
-                                marker.showInfoWindow();
+                                if(map.getCameraPosition().zoom < Constants.MAP_DEFAULT_ZOOM_TO_DISPLAY_CONTRACTS){
+                                    map.animateCamera(CameraUpdateFactory.newLatLngZoom(marker.getPosition(), Double.valueOf(Constants.MAP_DEFAULT_ZOOM_TO_DISPLAY_CONTRACTS).floatValue()));
+                                } else {
+                                    marker.showInfoWindow();
+                                }
                             }
                         }
 
@@ -559,124 +629,89 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             } else {
                 // Tell the user to check its google play services
                 Toast.makeText(this, R.string.error_google_play_service, Toast.LENGTH_LONG).show();
+                finish();
             }
         }
     }
 
-    private void animateCameraOnMapUserLocEnable() {
+    private boolean animateCameraOnMapUserLocEnable(GoogleMap.CancelableCallback callback) {
+        boolean launchedAnimation = false;
         if (map != null && locationClient.isConnected()) {
-            if (forceCameraPosition == true) {
+            if (forceCameraPosition) {
                 Location userLocation = locationClient.getLastLocation();
                 if (userLocation != null) {
-                    map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(userLocation.getLatitude(), userLocation.getLongitude()), Constants.MAP_DEFAULT_USER_ZOOM), Constants.MAP_ANIMATE_TIME, null);
+                    map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(userLocation.getLatitude(), userLocation.getLongitude()), Constants.MAP_DEFAULT_USER_ZOOM), Constants.MAP_ANIMATE_TIME, callback);
                 } else {
-                    map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Constants.TLS_LAT, Constants.TLS_LNG), Constants.MAP_DEFAULT_NO_LOCATION_ZOOM), Constants.MAP_ANIMATE_TIME, null);
+                    map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Constants.TLS_LAT, Constants.TLS_LNG), Constants.MAP_DEFAULT_NO_LOCATION_ZOOM), Constants.MAP_ANIMATE_TIME, callback);
                     if (Util.isOnline(this)) {
                         Toast.makeText(this, R.string.location_not_shared, Toast.LENGTH_LONG).show();
                     }
                 }
+                launchedAnimation = true;
             }
         }
+        return launchedAnimation;
     }
 
     /**
      * Call loadStations with no contract.
      * If the stations list is empty, search a contract first, then either call loadStations with the contract or with no contract.
-     * @param executeInBackground
+     * @param executeInBackground set the execution type
      */
-    private void loadStations(final boolean executeInBackground) {
-        boolean stationsIsEmpty = false;
-        synchronized (stations) {
-            stationsIsEmpty = stations.isEmpty();
-        }
+      private void loadStationsForCurrentDisplayedLocation(final boolean executeInBackground) {
 
-        if (stationsIsEmpty) {
-            //Looking for a contract
-            Location userLocation = locationClient.getLastLocation();
-            if (userLocation == null) {
-                // Default contract
-                loadStations(false, Constants.JCD_DEFAULT_CONTRACT_KEY);
+        if (map != null) {
+            float zoomLevel = map.getCameraPosition().zoom;
+            if (zoomLevel < Constants.MAP_DEFAULT_ZOOM_TO_DISPLAY_CONTRACTS) {
+                // Load contracts !
+                if (contracts.isEmpty()) {
+                    contracts = Util.getContracts(this);
+                }
+                currentContract = null;
+                if (!displayingContracts) {
+                    displayContracts();
+                }
+
             } else {
-                // Retrieve city name
-                WSRequest request = new WSRequest(MainActivity.this, Constants.GOOGLE_API_GEOCODE_URL);
-                request.withParam(Constants.GOOGLE_API_LATLNG, userLocation.getLatitude() + "," + userLocation.getLongitude());
-                request.withParam(Constants.GOOGLE_API_SENSOR, "true");
-                request.handleWith(new WSDefaultHandler(false) {
+                // Get viewport center to find current contract
+                LatLng centerCoordinates = map.getCameraPosition().target;
 
-                    @Override
-                    public void onResult(Context context, JSONObject result) {
-                        String jcdContract = null;
-                        String cityName = null;
-                        JSONArray addresses = (JSONArray) result.opt("results");
-                        if (addresses.length() > 0) {
-                            JSONObject address = (JSONObject) addresses.opt(0);
-                            JSONArray addressComponents = address.optJSONArray("address_components");
-                            if (addressComponents != null) {
-                                localitySearch:
-                                for (int i = 0; i < addressComponents.length(); i++) {
-                                    JSONObject component = addressComponents.optJSONObject(i);
-                                    if (component != null) {
-                                        JSONArray types = component.optJSONArray("types");
-                                        if (types != null) {
-                                            for (int j = 0; j < types.length(); j++) {
-                                                String type = types.optString(j);
-                                                if ("locality".equals(type)) {
-                                                    cityName = component.optString("long_name");
-                                                    break localitySearch;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        if (cityName != null) {
-                            // Retrieve contract covering this city
-                            jcdContract = Util.getContractNameForCity(cityName, MainActivity.this);
-                        }
-                        loadStations(executeInBackground, jcdContract);
-                    }
-
-                    @Override
-                    public void onException(Context context, Exception e) {
-                        loadStations(executeInBackground, null);
-                    }
-
-                    @Override
-                    public void onError(Context context, int errorCode) {
-                        loadStations(executeInBackground, null);
-                    }
-
-                });
-                request.call();
+                Contract tmpContract = Util.getContractForLocation(centerCoordinates, this);
+                if(tmpContract != null) {
+                    currentContract = tmpContract;
+                }
+                if (currentContract == null) {
+                    Log.d("Could not find contract for location " + centerCoordinates.latitude + ", " + centerCoordinates.longitude);
+                } else {
+                    loadStationsForContract(executeInBackground, currentContract);
+                }
             }
-        } else {
-            loadStations(executeInBackground, null);
         }
     }
 
-    private void loadStations(final boolean executeInBackground, final String contract) {
+    private void loadStationsForContract(final boolean executeInBackground, final Contract contract) {
         loadStationsTry++;
 
         if (!loadingStations) {
             loadingStations = true;
-            WSRequest request = new WSRequest(this, Constants.JCD_URL);
-            request.withParam(Constants.JCD_API_KEY, ((App) getApplication()).getApiKey(Constants.JCD_APP_API_KEY));
-            if (contract != null) {
-                request.withParam(Constants.JCD_CONTRACT, contract);
+
+            String url = contract.getUrl();
+            if (contract.getProvider() == Contract.Provider.JCDECAUX) {
+                url += "&" + Constants.JCD_API_KEY + "=" + ((App) getApplication()).getApiKey(Constants.JCD_APP_API_KEY);
             }
+            WSRequest request = new WSRequest(this, url);
             request.handleWith(new WSDefaultHandler(executeInBackground) {
                 @Override
                 public void onResult(Context context, JSONObject result) {
                     loadStationsTry = 0;
-                    loadStationsParseJSONResult(result, executeInBackground, contract != null);
+                    loadStationsParseJSONResult(result, executeInBackground, contract);
                 }
 
                 @Override
                 public void onException(Context context, Exception e) {
                     loadingStations = false;
                     if (loadStationsTry < 3) {
-                        loadStations(executeInBackground, contract);
+                        loadStationsForContract(executeInBackground, contract);
                     } else {
                         if (!Util.isOnline(MainActivity.this)) {
                             Toast.makeText(MainActivity.this, R.string.internet_not_available, Toast.LENGTH_LONG).show();
@@ -684,6 +719,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                             Toast.makeText(MainActivity.this, R.string.ws_stations_not_availabel, Toast.LENGTH_LONG).show();
                         }
                         loadStationsTry = 0;
+                        waitLoadStationForLauchSearch = false;
                     }
                 }
 
@@ -691,7 +727,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 public void onError(Context context, int errorCode) {
                     loadingStations = false;
                     if (loadStationsTry < 3) {
-                        loadStations(executeInBackground, contract);
+                        loadStationsForContract(executeInBackground, contract);
                     } else {
                         if (!Util.isOnline(MainActivity.this)) {
                             Toast.makeText(MainActivity.this, R.string.internet_not_available, Toast.LENGTH_LONG).show();
@@ -699,6 +735,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                             Toast.makeText(MainActivity.this, R.string.ws_stations_not_availabel, Toast.LENGTH_LONG).show();
                         }
                         loadStationsTry = 0;
+                        waitLoadStationForLauchSearch = false;
                     }
                 }
             });
@@ -706,7 +743,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         }
     }
 
-    private void loadStationsParseJSONResult(final JSONObject result, final boolean inBackground, final boolean relaunchStationLoading) {
+    private void loadStationsParseJSONResult(final JSONObject result, final boolean inBackground, final Contract contract) {
         new AsyncTask<Void, Void, Void>() {
             @Override
             protected synchronized Void doInBackground(Void... voids) {
@@ -715,8 +752,10 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                     synchronized (stations) {
                         stations.clear();
                         for (int i = 0; i < stationsJSON.length(); i++) {
-                            Station station = new Station(stationsJSON.optJSONObject(i));
-                            stations.add(station);
+                            Station station = new Station(stationsJSON.optJSONObject(i), contract.getProvider());
+                            if ((station.lat != 0 || station.lng != 0) && !station.name.equals(TEST_STATION_NAME)) {
+                                stations.add(station);
+                            }
                         }
                     }
                 }
@@ -737,36 +776,62 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 }
 
                 if (map != null) {
-                    displayStations(relaunchStationLoading);
                     loadingStations = false;
+
+                    if(waitLoadStationForLauchSearch){
+                        if (searchModeLoadStationsAndRoute()) {
+                            searchModeDisplayStationsAndRoute();
+                        }
+                        waitLoadStationForLauchSearch = false;
+                    } else {
+                        displayStations();
+                    }
+
                 }
             }
 
             @Override
             protected void onCancelled() {
                 loadingStations = false;
+                waitLoadStationForLauchSearch = false;
             }
 
             @Override
             protected void onCancelled(Void aVoid) {
                 loadingStations = false;
+                waitLoadStationForLauchSearch = false;
             }
         }.execute();
     }
 
-    private void displayStations() {
-        displayStations(false);
-    }
 
-    private void displayStations(boolean relaunchStationLoading) {
+
+    private void displayStations() {
+        displayingContracts = false;
         if (searchMode) {
             searchModeUpdateStations();
         } else {
-            normalModeDisplayStations(relaunchStationLoading);
+            normalModeDisplayStations();
         }
     }
 
-    private void normalModeDisplayStations(final boolean relaunchStationLoading) {
+    private void displayContracts() {
+        ArrayList<Marker> tmpAddedMarkers = new ArrayList<Marker>();
+        normalModeClusterBounds = new HashMap<Marker, LatLngBounds>();
+        for (Contract contract : contracts) {
+            MarkerOptions mo = new MarkerOptions().position(contract.getCenter()).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_station_cluster)).anchor(StationMarker.MARKER_ANCHOR_U, StationMarker.MARKER_ANCHOR_V);
+            Marker marker = map.addMarker(mo);
+            tmpAddedMarkers.add(marker);
+            normalModeClusterBounds.put(marker, null);
+        }
+        for (Marker marker : normalModeCurrentMarkers) {
+            marker.remove();
+        }
+        displayingContracts = true;
+        normalModeCurrentMarkers = tmpAddedMarkers;
+    }
+
+    private void normalModeDisplayStations() {
         if (displayStationsTask != null && displayStationsTask.getStatus() != AsyncTask.Status.FINISHED) {
             displayStationsTask.cancel(true);
         }
@@ -855,10 +920,6 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                 }
 
                 normalModeCurrentMarkers = tmpAddedMarkers;
-
-                if (relaunchStationLoading) {
-                    timer.post(timeRunnable);
-                }
             }
         }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
@@ -873,10 +934,13 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private void toggleSearchViewVisible() {
         if (!searchViewVisible) {
             searchViewVisible = true;
-            searchView.setVisibility(View.VISIBLE);
             this.actionSearchMenuItem.setVisible(false);
             this.actionClearSearchMenuItem.setVisible(false);
-            mapView.animate().translationY(searchView.getHeight());
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.JELLY_BEAN) {
+                searchView.setY(0);
+            } else {
+                searchView.animate().translationYBy(searchView.getHeight()).setDuration(ANIM_DURATION);
+            }
         } else {
             hideSearchView();
         }
@@ -892,23 +956,31 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         arrivalStandsField.setText("1");
 
         actionClearSearchMenuItem.setVisible(false);
+        setSearchInfoVisible(false);
         clearMap();
-        displayStations();
+
+        loadStationsForCurrentDisplayedLocation(true);
     }
 
     private void hideSearchView() {
-        searchViewVisible = false;
-        this.actionSearchMenuItem.setVisible(true);
+        if(searchViewVisible){
+            searchViewVisible = false;
+            this.actionSearchMenuItem.setVisible(true);
 
-        if (searchMode) {
-            this.actionClearSearchMenuItem.setVisible(true);
-        }
+            if (searchMode) {
+                this.actionClearSearchMenuItem.setVisible(true);
+            }
 
-        mapView.animate().translationY(0);
-        InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(FragmentActivity.INPUT_METHOD_SERVICE);
-        View focus = getCurrentFocus();
-        if (inputMethodManager != null && focus != null) {
-            inputMethodManager.hideSoftInputFromWindow(focus.getWindowToken(), 0);
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.JELLY_BEAN) {
+                searchView.setY(-searchView.getHeight());
+            } else {
+                searchView.animate().translationYBy(-searchView.getHeight()).setDuration(ANIM_DURATION);
+            }
+            InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(FragmentActivity.INPUT_METHOD_SERVICE);
+            View focus = getCurrentFocus();
+            if (inputMethodManager != null && focus != null) {
+                inputMethodManager.hideSoftInputFromWindow(focus.getWindowToken(), 0);
+            }
         }
     }
 
@@ -930,6 +1002,38 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         locationProgress.setVisibility(View.VISIBLE);
         fieldText.setAdapter((ArrayAdapter<String>) null);
 
+        if (Geocoder.isPresent()) {
+            try {
+                List<Address> addresses = geocoder.getFromLocation(userLocation.getLatitude(), userLocation.getLongitude(), 1);
+                if (addresses != null && !addresses.isEmpty()) {
+                    locationButton.setVisibility(View.VISIBLE);
+                    locationProgress.setVisibility(View.GONE);
+                    Address address = addresses.get(0);
+                    fieldText.setText(String.format(
+                            "%s, %s, %s",
+                            // If there's a street address, add it
+                            address.getMaxAddressLineIndex() > 0 ?
+                                    address.getAddressLine(0) : "",
+                            // Locality is usually a city
+                            address.getLocality(),
+                            // The country of the address
+                            address.getCountryName()));
+                } else {
+                    locationButton.setVisibility(View.VISIBLE);
+                    locationProgress.setVisibility(View.GONE);
+                    Toast.makeText(MainActivity.this, R.string.address_not_found, Toast.LENGTH_LONG).show();
+                }
+            } catch (IOException e) {
+                Log.e("Could not retrieve user address", e);
+                fillAddressFieldWithGoogleWebservices(userLocation, fieldText, locationButton, locationProgress);
+            }
+        } else {
+            Log.i("Geocoder not present, falling back to Google webservices");
+            fillAddressFieldWithGoogleWebservices(userLocation, fieldText, locationButton, locationProgress);
+        }
+    }
+
+    private void fillAddressFieldWithGoogleWebservices(Location userLocation, final AutoCompleteTextView fieldText, final ImageButton locationButton, final ProgressBar locationProgress) {
         WSRequest request = new WSRequest(MainActivity.this, Constants.GOOGLE_API_GEOCODE_URL);
         request.withParam(Constants.GOOGLE_API_LATLNG, userLocation.getLatitude() + "," + userLocation.getLongitude());
         request.withParam(Constants.GOOGLE_API_SENSOR, "true");
@@ -1004,6 +1108,64 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     }
 
     private void searchModeLoadFieldLocation(String address, final int fieldId) {
+        if (Geocoder.isPresent()) {
+            try {
+                List<Address> addresses = geocoder.getFromLocationName(address, 1);
+                if (addresses != null && !addresses.isEmpty()) {
+                    Address addr = addresses.get(0);
+                    double lat = addr.getLatitude();
+                    double lng = addr.getLongitude();
+                    if (fieldId == FIELD_DEPARTURE) {
+                        departureLocation = new LatLng(lat, lng);
+                    }
+                    if (fieldId == FIELD_ARRIVAL) {
+                        arrivalLocation = new LatLng(lat, lng);
+                    }
+
+                    // This function is called for departure and arrival fields
+                    // Once we have the 2 location, the stations and route loading can continue
+                    if (departureLocation != null && arrivalLocation != null) {
+                        //search the contract for the locations
+                        Contract departureContract = Util.getContractForLocation(departureLocation, MainActivity.this);
+                        Contract arrivalContract = Util.getContractForLocation(arrivalLocation, MainActivity.this);
+
+                        if(departureContract != null && arrivalContract != null){
+                            if(departureContract.getName().equals(arrivalContract.getName())){
+                                if(currentContract != null && departureContract.getName().equals(currentContract.getName())){
+                                    if (searchModeLoadStationsAndRoute()) {
+                                        searchModeDisplayStationsAndRoute();
+                                    }
+                                } else {
+                                    currentContract = departureContract;
+                                    waitLoadStationForLauchSearch = true;
+                                    loadStationsForContract(false, currentContract);
+                                }
+                            } else {
+                                searchButton.setEnabled(true);
+                                setProgressBarIndeterminateVisibility(false);
+                                Toast.makeText(MainActivity.this, R.string.serach_not_on_same_contract, Toast.LENGTH_LONG).show();
+                            }
+                        } else {
+                            searchButton.setEnabled(true);
+                            setProgressBarIndeterminateVisibility(false);
+                            Toast.makeText(MainActivity.this, R.string.unsupported_contract, Toast.LENGTH_LONG).show();
+                        }
+                    }
+                } else {
+                    searchButton.setEnabled(true);
+                    setProgressBarIndeterminateVisibility(false);
+                }
+            } catch (IOException e) {
+                Log.e("Could not retrieve user address", e);
+                searchModeLoadFieldLocationWithGoogleWebservices(address, fieldId);
+            }
+        } else {
+            Log.i("Geocoder not present, falling back to Google webservices");
+            searchModeLoadFieldLocationWithGoogleWebservices(address, fieldId);
+        }
+    }
+
+    private void searchModeLoadFieldLocationWithGoogleWebservices(String address, final int fieldId) {
         WSRequest request = new WSRequest(MainActivity.this, Constants.GOOGLE_API_GEOCODE_URL);
         request.withParam(Constants.GOOGLE_API_ADDRESS, address);
         request.withParam(Constants.GOOGLE_API_SENSOR, "true");
@@ -1042,8 +1204,31 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                             // This function is called for departure and arrival fields
                             // Once we have the 2 location, the stations and route loading can continue
                             if (departureLocation != null && arrivalLocation != null) {
-                                if (searchModeLoadStationsAndRoute()) {
-                                    searchModeDisplayStationsAndRoute();
+
+                                //search the contract for the locations
+                                Contract departureContract = Util.getContractForLocation(departureLocation, MainActivity.this);
+                                Contract arrivalContract = Util.getContractForLocation(arrivalLocation, MainActivity.this);
+
+                                if(departureContract != null && arrivalContract != null){
+                                    if(departureContract.getName().equals(arrivalContract.getName())){
+                                        if(currentContract != null && departureContract.getName().equals(currentContract.getName())){
+                                            if (searchModeLoadStationsAndRoute()) {
+                                                searchModeDisplayStationsAndRoute();
+                                            }
+                                        } else {
+                                            currentContract = departureContract;
+                                            waitLoadStationForLauchSearch = true;
+                                            loadStationsForContract(false, currentContract);
+                                        }
+                                    } else {
+                                        searchButton.setEnabled(true);
+                                        setProgressBarIndeterminateVisibility(false);
+                                        Toast.makeText(MainActivity.this, R.string.serach_not_on_same_contract, Toast.LENGTH_LONG).show();
+                                    }
+                                } else {
+                                    searchButton.setEnabled(true);
+                                    setProgressBarIndeterminateVisibility(false);
+                                    Toast.makeText(MainActivity.this, R.string.unsupported_contract, Toast.LENGTH_LONG).show();
                                 }
                             }
                         } else {
@@ -1095,7 +1280,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                             doASearch = true;
                             break loopToUpdateSearchModeStations;
                         } else {
-                            station.updateDynamicDatasWithStation(updatedStation);
+                            station.updateDynamicDataWithStation(updatedStation);
                         }
                     }
                 }
@@ -1106,7 +1291,7 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
                             doASearch = true;
                             break loopToUpdateSearchModeStations;
                         } else {
-                            station.updateDynamicDatasWithStation(updatedStation);
+                            station.updateDynamicDataWithStation(updatedStation);
                         }
 
                     }
@@ -1155,9 +1340,36 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
             public void onResult(Context context, JSONObject result) {
                 if ("OK".equals(result.optString("status"))) {
                     JSONArray routeArray = result.optJSONArray("routes");
-                    JSONObject routes = routeArray.optJSONObject(0);
-                    JSONObject overviewPolylines = routes.optJSONObject("overview_polyline");
+                    JSONObject route = routeArray.optJSONObject(0);
+                    JSONArray legs = route.optJSONArray("legs");
+                    JSONObject leg = legs.optJSONObject(0);
+                    JSONObject overviewPolylines = route.optJSONObject("overview_polyline");
                     String encodedString = overviewPolylines.optString("points");
+                    String distance = leg.optJSONObject("distance").optString("text");
+                    long seconds = leg.optJSONObject("duration").optLong("value") / 2;  // we've asked for a walking route
+                    long hours = TimeUnit.SECONDS.toHours(seconds);
+                    long minutes = TimeUnit.SECONDS.toMinutes(seconds) - TimeUnit.HOURS.toMinutes(hours);
+                    String duration = "";
+                    if (hours > 1) {
+                        duration += hours + " " + getString(R.string.hours);
+                    } else if (hours > 0) {
+                        duration += hours + " " + getString(R.string.hour);
+                    }
+                    if (minutes > 0) {
+                        if (!duration.isEmpty()) {
+                            duration += " ";
+                        }
+                        if (minutes > 1) {
+                            duration += minutes + " " + getString(R.string.minutes);
+                        } else {
+                            duration += minutes + " " + getString(R.string.minute);
+                        }
+                    }
+
+                    searchInfoDuration.setText(duration);
+                    searchInfoDistance.setText(distance);
+                    setSearchInfoVisible(true);
+
                     List<LatLng> list = Util.decodePoly(encodedString);
                     // Add the location of the departure and arrival stations
                     list.add(0, searchModeDepartureStation.latLng);
@@ -1194,13 +1406,14 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
     private void searchModeDisplayStations(boolean addDepartureArrivalMarkers) {
         for (Station station : searchModeDepartureStations) {
             if (station.searchMarker != null) {
-                station.searchMarker.remove();
+                station.clearMarker();
             }
+
             station.searchMarker = map.addMarker(StationMarker.createMarker(MainActivity.this, station));
         }
         for (Station station : searchModeArrivalStations) {
             if (station.searchMarker != null) {
-                station.searchMarker.remove();
+                station.clearMarker();
             }
             station.searchMarker = map.addMarker(StationMarker.createMarker(MainActivity.this, station));
         }
@@ -1281,5 +1494,22 @@ public class MainActivity extends FragmentActivity implements GooglePlayServices
         }
 
         return matchingStations;
+    }
+
+    private void setSearchInfoVisible(boolean setVisible) {
+        if (setVisible && !searchInfoVisible) {
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.JELLY_BEAN) {
+                searchInfo.setTranslationY(1 - searchInfo.getHeight());
+            } else {
+                searchInfo.animate().translationYBy(1 - searchInfo.getHeight()).setDuration(ANIM_DURATION);
+            }
+        } else if (!setVisible && searchInfoVisible) {
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.JELLY_BEAN) {
+                searchInfo.setTranslationY(searchInfo.getHeight() - 1);
+            } else {
+                searchInfo.animate().translationYBy(searchInfo.getHeight() - 1).setDuration(ANIM_DURATION);
+            }
+        }
+        searchInfoVisible = setVisible;
     }
 }
