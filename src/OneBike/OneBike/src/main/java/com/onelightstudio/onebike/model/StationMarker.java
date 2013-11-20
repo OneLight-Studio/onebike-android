@@ -20,8 +20,8 @@ import com.onelightstudio.onebike.R;
  */
 public class StationMarker {
 
-    private static final float MARKER_ANCHOR_U = 0.3f;
-    private static final float MARKER_ANCHOR_V = 1.0f;
+    public static final float MARKER_ANCHOR_U = 0.3f;
+    public static final float MARKER_ANCHOR_V = 1.0f;
 
     private static Bitmap markerBitmap;
     private static Paint paint;
@@ -30,20 +30,14 @@ public class StationMarker {
         LatLng center = new LatLng(
                 (bounds.northeast.latitude + bounds.southwest.latitude) / 2,
                 (bounds.northeast.longitude + bounds.southwest.longitude) / 2);
-        return new MarkerOptions().position(center).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_station_cluster));
+        return new MarkerOptions().position(center).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_station_cluster)).anchor(MARKER_ANCHOR_U, MARKER_ANCHOR_V);
     }
 
     public static MarkerOptions createMarker(Context ctx, Station station) {
         if (station.markerOptions == null) {
             Bitmap bmp = createBitmap(ctx, station);
             // Do not display the 'xxx - ' before the station name
-            String title = station.name;
-            if (station.name != null) {
-                int indexOfSeparator = station.name.indexOf(" - ");
-                if (indexOfSeparator > -1) {
-                    title = station.name.substring(indexOfSeparator + 3);
-                }
-            }
+            String title = station.displayName;
             station.markerOptions = new MarkerOptions().position(station.latLng).title(title).icon(BitmapDescriptorFactory.fromBitmap(bmp)).anchor(MARKER_ANCHOR_U, MARKER_ANCHOR_V);
             bmp.recycle();
         }

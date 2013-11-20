@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.onelightstudio.onebike"
-    android:versionCode="4"
+    android:versionCode="6"
     android:versionName="1.1">
 
     <permission
@@ -53,16 +53,16 @@
             android:screenOrientation="portrait" />
 
         <!-- Development Key -->
-        <meta-data
+        <!--<meta-data
             android:name="com.google.android.maps.v2.API_KEY"
             android:value="AIzaSyDgKRier12bPPknXhPRvuAvPdNn3vFQbW8" />
+        -->
 
         <!-- Production Key -->
-        <!--
-             <meta-data
+        <meta-data
             android:name="com.google.android.maps.v2.API_KEY"
             android:value="AIzaSyD2Gwnud-X9UIxrfZzLmhCd-bmxyEtJzzk" />
-        -->
+
     </application>
 
 </manifest>

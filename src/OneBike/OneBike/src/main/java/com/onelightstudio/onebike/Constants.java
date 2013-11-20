@@ -5,8 +5,9 @@ public interface Constants {
 
     static final int MAP_DEFAULT_NO_LOCATION_ZOOM = 12;
     static final int MAP_DEFAULT_USER_ZOOM = 15;
+    static final double MAP_DEFAULT_ZOOM_TO_DISPLAY_CONTRACTS = 12.5;
     static final int MAP_ANIMATE_TIME = 500;
-    static final int MAP_TIMER_REFRESH_IN_MILLISECONDES = 300000;
+    static final int MAP_TIMER_REFRESH_IN_MILLISECONDES = 120000; // 2 min
 
     static final int SEARCH_RESULT_MAX_STATIONS_NUMBER = 3;
     static final int STATION_SEARCH_MAX_RADIUS_IN_METERS = 5000;

@@ -40,4 +40,6 @@
     <string name="about_text_1">OneBike utiliza los datos de las APIs de tiempo real de JCDecaux &amp; CitiBikes.</string>
     <string name="about_text_2">Para mayor información o sugerencia no dude en hacer clic arriba. No sea tímido, ¡ nosotros adoramos a escucharle !</string>
     <string name="about_copyright">OneBike es una aplicación de OneLight Studio, marca registrada de la sociedad Prometil.</string>
+    <string name="serach_not_on_same_contract">El inicio y el destino de su búsqueda deben encontrarse en la misma ciudad.</string>
+    <string name="unsupported_contract">OneBike no soporta aún la ciudad de su búsqueda.</string>
 </resources>
